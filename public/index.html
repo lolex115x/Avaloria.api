@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AvaloriaRP Telefon</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="theme-color" content="#0a0f22">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+:root{
+  --navy:#070b18; --navy2:#0e1530; --panel:#121a38cc;
+  --gold:#d9b05c; --gold-lt:#f0d79a;
+  --green:#4ade80; --red:#f87171; --muted:#9aa3c7; --cream:#f1ede1;
+  --blue:#3b82f6;
+}
+html,body{margin:0;height:100%;background:transparent;color:var(--cream);font-family:'Inter',sans-serif;overflow:hidden}
+.brand{font-family:'Cinzel',serif;letter-spacing:.06em}
+a{color:inherit}
+
+/* ===== RAMKA FIZYCZNEGO TELEFONU ===== */
+.phone-frame{position:relative;width:100%;height:100%;background:linear-gradient(160deg,#1b1f2e,#0a0c14);border-radius:38px;padding:14px 10px;box-shadow:0 0 0 1px rgba(255,255,255,.06) inset, 0 30px 70px -15px rgba(0,0,0,.85);display:flex;flex-direction:column}
+.phone-notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:110px;height:22px;background:#05070c;border-radius:14px;z-index:20}
+.phone-screen{flex:1;background:var(--wallpaper, radial-gradient(circle at 20% 10%, #1a2550 0%, transparent 45%),radial-gradient(circle at 85% 85%, #231a3d 0%, transparent 50%),linear-gradient(180deg,#05070f,#0a0f22 60%,#05070f));border-radius:28px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.home-indicator{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:120px;height:4px;background:rgba(255,255,255,.35);border-radius:4px;z-index:45}
+
+.screen{display:none;min-height:100%;height:100%;overflow-y:auto;position:relative}
+.screen.active{display:block}
+
+/* ===== STATUS BAR ===== */
+.status-bar{display:flex;justify-content:space-between;align-items:center;padding:6px 18px;font-size:.78rem;color:var(--cream);background:rgba(0,0,0,.25);flex-shrink:0}
+.status-bar .time{font-weight:600;letter-spacing:.02em}
+.status-bar .icons{display:flex;gap:6px;align-items:center;opacity:.85}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(217,176,92,.18);flex-shrink:0}
+header .brand{font-size:1rem;color:var(--gold-lt)}
+.back-btn{background:none;border:1px solid rgba(217,176,92,.35);color:var(--muted);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:.8rem}
+
+.wrap{max-width:900px;margin:0 auto;padding:16px 18px 100px}
+
+/* ===== LOGIN ===== */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100%;padding:24px}
+.login-card{width:100%;max-width:340px}
+.login-card h1{font-size:1.3rem;color:var(--gold-lt);text-align:center;margin:0 0 4px}
+.login-card .tagline{text-align:center;color:var(--muted);font-size:.72rem;margin-bottom:26px;letter-spacing:.08em;text-transform:uppercase}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.76rem;color:var(--muted);margin-bottom:6px}
+.field input,.field select{width:100%;padding:10px 12px;border-radius:7px;border:1px solid rgba(217,176,92,.3);background:#0b1026;color:var(--cream);font-size:.9rem}
+.field input:focus{outline:none;border-color:var(--gold)}
+.btn{width:100%;padding:11px;border-radius:7px;border:none;background:linear-gradient(135deg,var(--gold-lt),var(--gold));color:#231705;font-weight:600;cursor:pointer;font-size:.9rem}
+.btn:hover{filter:brightness(1.08)}
+.btn.secondary{background:transparent;border:1px solid rgba(217,176,92,.4);color:var(--gold-lt)}
+.msg{font-size:.8rem;margin-top:10px;text-align:center}
+.msg.error{color:var(--red)}
+.msg.ok{color:var(--green)}
+
+/* ===== PHONE HOME ===== */
+.phone-home-header{text-align:center;padding:30px 20px 10px;position:relative;min-height:46px}
+.power-btn{position:absolute;top:14px;right:16px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(239,68,68,.5);background:rgba(239,68,68,.12);color:#ef4444;font-size:1rem;cursor:pointer}
+.power-btn:hover{background:rgba(239,68,68,.25)}
+.phone-home-header .brand{font-size:1.1rem;color:var(--gold-lt)}
+.phone-home-header .user{color:var(--muted);font-size:.8rem;margin-top:4px}
+.phone-home-header .phone-number{font-family:monospace;font-size:.74rem;color:var(--muted);margin-top:2px}
+
+.app-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 10px;padding:14px 16px}
+.app-icon{text-align:center;cursor:pointer;min-width:0}
+.app-icon .tile{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 6px;box-shadow:0 8px 18px -6px rgba(0,0,0,.6)}
+.app-icon .name{font-size:.68rem;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ===== KARTY / PANELE OGÓLNE ===== */
+.panel{background:var(--panel);border:1px solid rgba(217,176,92,.2);border-radius:12px;padding:18px;margin-bottom:16px}
+.panel h2{margin:0 0 14px;font-size:1rem;color:var(--gold-lt)}
+
+.balance-card{background:linear-gradient(135deg,#17224a,#0e1530);border:1px solid rgba(217,176,92,.3);border-radius:14px;padding:22px}
+.balance-card .label{color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.08em}
+.balance-card .amount{font-size:2rem;font-weight:600;color:var(--gold-lt);margin:4px 0}
+.balance-card .accno{color:var(--muted);font-size:.8rem;font-family:monospace}
+
+.tabs{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}
+.tabs button{background:var(--panel);border:1px solid rgba(217,176,92,.25);color:var(--muted);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.8rem}
+.tabs button.active{color:var(--gold-lt);border-color:var(--gold)}
+.tabpanel{display:none}
+.tabpanel.active{display:block}
+
+.tx-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.86rem}
+.tx-row:last-child{border-bottom:none}
+.tx-row .title{color:var(--cream)}
+.tx-row .meta{color:var(--muted);font-size:.74rem}
+.tx-row .amt.in{color:var(--green)}
+.tx-row .amt.out{color:var(--red)}
+.status-pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.68rem;margin-left:6px}
+.status-pill.PENDING{background:#4a3a1a;color:#f0c674}
+.status-pill.APPROVED{background:#16331f;color:#4ade80}
+.status-pill.REJECTED{background:#3a1a1a;color:#f87171}
+.status-pill.PAID{background:#1a2550;color:#9aa3c7}
+#empty{color:var(--muted);font-size:.84rem;text-align:center;padding:26px 0}
+
+/* ===== ĆWIERK (Twitter) ===== */
+body[data-screen="screen-cwierk"] .fab{display:block}
+.fab{display:none;position:absolute;bottom:72px;right:18px;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--blue),#1e3a8a);border:none;color:#fff;font-size:1.5rem;cursor:pointer;box-shadow:0 10px 24px -6px rgba(0,0,0,.6);z-index:15;line-height:1}
+.tweet-card{display:flex;gap:10px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--blue),#1e3a8a);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;color:#fff;font-weight:600;cursor:pointer}
+.tweet-body{flex:1;min-width:0}
+.tweet-body .name{font-size:.84rem;color:var(--cream);font-weight:600;cursor:pointer}
+.tweet-body .time{font-size:.7rem;color:var(--muted);margin-left:6px;font-weight:400}
+.tweet-body .text{font-size:.86rem;margin:4px 0;color:var(--cream);word-wrap:break-word}
+.tweet-body img{max-width:100%;border-radius:10px;margin-top:6px;display:block}
+.tweet-actions{display:flex;gap:22px;margin-top:8px}
+.tweet-actions button{background:none;border:none;color:var(--muted);font-size:.78rem;cursor:pointer;display:flex;align-items:center;gap:5px}
+.tweet-actions button.liked{color:#ec4899}
+
+.modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;z-index:50}
+.modal-overlay.active{display:flex}
+.modal-sheet{width:100%;max-height:85%;overflow-y:auto;background:#0e1530;border-radius:20px 20px 0 0;padding:18px;border-top:1px solid rgba(217,176,92,.25)}
+.modal-sheet textarea{width:100%;min-height:80px;background:#0b1026;border:1px solid rgba(217,176,92,.3);border-radius:8px;color:var(--cream);padding:10px;font-family:inherit;resize:none;font-size:.86rem}
+.modal-row{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.modal-row .btn,.modal-row .btn.secondary{width:auto;padding:9px 14px}
+.img-preview{max-width:100%;border-radius:8px;margin-top:8px;display:none}
+
+.comment-row{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.82rem}
+.comment-row.reply{margin-left:30px;border-left:2px solid rgba(217,176,92,.2);padding-left:10px}
+.comment-head{display:flex;gap:8px;align-items:baseline}
+.comment-head .name{font-weight:600;color:var(--cream);cursor:pointer}
+.comment-head .time{color:var(--muted);font-size:.68rem}
+.comment-text{margin:3px 0 4px;color:var(--cream)}
+.comment-actions{display:flex;gap:16px}
+.comment-actions button{background:none;border:none;color:var(--muted);font-size:.72rem;cursor:pointer}
+.comment-actions button.liked{color:#ec4899}
+.reply-indicator{font-size:.76rem;color:var(--gold-lt);margin-bottom:6px;display:none}
+
+.profile-header{text-align:center;padding:20px}
+.profile-header .avatar{width:70px;height:70px;font-size:1.5rem;margin:0 auto 10px;cursor:default}
+.profile-header .name{font-size:1.1rem;color:var(--gold-lt)}
+.profile-header .phone{color:var(--muted);font-size:.78rem;margin-top:2px;font-family:monospace}
+.profile-header .count{color:var(--muted);font-size:.8rem;margin-top:8px}
+
+/* ===== USTAWIENIA ===== */
+.settings-row{padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.settings-row label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px}
+.settings-row select,.settings-row input[type=range]{width:100%}
+.brightness-overlay{position:absolute;inset:0;background:#000;pointer-events:none;opacity:0;z-index:40;border-radius:28px}
+
+/* ===== DZWONIENIE ===== */
+.call-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;height:100%}
+.call-wrap .icon{font-size:3rem;margin-bottom:10px}
+.call-wrap .name{font-size:1.15rem;color:var(--gold-lt)}
+.call-wrap .status{color:var(--muted);font-size:.84rem;margin:6px 0 30px}
+.call-buttons{display:flex;gap:20px}
+.call-buttons button{width:56px;height:56px;border-radius:50%;border:none;font-size:1.3rem;cursor:pointer}
+
+/* ===== WĄTEK WIADOMOŚCI (pasek pisania nad dolnym menu) ===== */
+#screen-thread.active{display:flex;flex-direction:column;overflow:hidden}
+.thread-body{flex:1;overflow-y:auto;padding:12px 16px}
+.thread-input{display:flex;gap:8px;padding:10px 10px 84px;background:rgba(7,11,24,.92);border-top:1px solid rgba(217,176,92,.15);flex-shrink:0}
+.thread-input input{flex:1;padding:10px 14px;border-radius:20px;border:1px solid rgba(217,176,92,.3);background:#0b1026;color:var(--cream);font-size:.9rem}
+.thread-input input:focus{outline:none;border-color:var(--gold)}
+.thread-input .btn{width:auto;padding:10px 18px;border-radius:20px}
+.fieldtxt{width:100%;padding:10px 12px;border-radius:7px;border:1px solid rgba(217,176,92,.3);background:#0b1026;color:var(--cream);font-size:.9rem;font-family:inherit;resize:none}
+.ftabs{display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap}
+.ftabs button{background:var(--panel);border:1px solid rgba(217,176,92,.25);color:var(--muted);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:.78rem}
+.ftabs button.active{color:var(--gold-lt);border-color:var(--gold)}
+.pill{display:inline-block;font-size:.66rem;padding:2px 8px;border-radius:10px;border:1px solid rgba(217,176,92,.3);color:var(--muted);margin-left:6px}
+.pill.ok{color:var(--green);border-color:var(--green)} .pill.warn{color:var(--gold-lt)} .pill.off{color:var(--red);border-color:var(--red)}
+.btn.small{width:auto;padding:6px 12px;font-size:.78rem}
+.kpi{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.kpi div{background:var(--panel);border:1px solid rgba(217,176,92,.2);border-radius:10px;padding:10px 12px}
+.kpi b{display:block;font-size:1.05rem;color:var(--gold-lt)} .kpi span{font-size:.7rem;color:var(--muted)}
+
+/* ===== PASEK NAWIGACJI ===== */
+.bottom-nav{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:50px;padding:10px 0 20px;background:rgba(7,11,24,.85);backdrop-filter:blur(8px);z-index:35}
+.bottom-nav button{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(217,176,92,.25);color:var(--cream);font-size:1.05rem;cursor:pointer}
+.bottom-nav button:hover{background:rgba(217,176,92,.2)}
+/* ===== ROZMIAR TELEFONU / PEŁNY EKRAN NA PRAWDZIWYM TELEFONIE ===== */
+body.browser{background:#05070c;display:flex;align-items:center;justify-content:center}
+body.browser .phone-frame{width:var(--pw,380px);height:min(calc(100dvh - 24px), calc(var(--pw,380px) * 2.05))}
+body.mode-full{background:var(--navy)}
+body.mode-full .phone-frame{width:100%;height:100dvh;border-radius:0;padding:0;box-shadow:none;background:var(--navy)}
+body.mode-full .phone-notch,body.mode-full .home-indicator{display:none}
+body.mode-full .phone-screen{border-radius:0;padding-top:env(safe-area-inset-top)}
+body.mode-full .status-bar{display:none}
+body.mode-full .bottom-nav{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+body.mode-full .fab{bottom:calc(72px + env(safe-area-inset-bottom))}
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-notch"></div>
+  <div class="phone-screen">
+
+    <!-- ===== LOGOWANIE ===== -->
+    <div class="screen active" id="screen-login">
+      <div class="login-wrap">
+        <div class="login-card">
+          <h1 class="brand">AVALORIA<br>FEDERAL BANK</h1>
+          <div class="tagline">Twoje finanse. Nasza misja.</div>
+          <div id="login-form">
+            <div class="field"><label>Nazwa użytkownika</label><input id="username" type="text" autocomplete="username"></div>
+            <div class="field"><label>Hasło</label><input id="password" type="password" autocomplete="current-password"></div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted);margin:0 0 12px;cursor:pointer"><input id="remember" type="checkbox" checked style="width:auto"> Zapamiętaj postać na tym urządzeniu</label>
+            <button class="btn" onclick="login()">Zaloguj się</button>
+            <div id="login-msg" class="msg"></div>
+            <div id="saved-login"></div>
+          </div>
+          <div id="change-pw-form" style="display:none">
+            <p style="color:var(--muted);font-size:.82rem">To Twoje pierwsze logowanie - ustaw nowe hasło.</p>
+            <div class="field"><label>Nowe hasło (min. 6 znaków)</label><input id="new-password" type="password"></div>
+            <button class="btn" onclick="changePassword()">Ustaw hasło</button>
+            <div id="change-pw-msg" class="msg"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== EKRAN GŁÓWNY TELEFONU ===== -->
+    <div class="screen" id="screen-home">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <div class="phone-home-header">
+        <div class="user" id="phone-user"></div>
+        <div class="phone-number" id="phone-number-display"></div>
+        <button class="power-btn" onclick="powerOff()" title="Wyłącz telefon">⏻</button>
+      </div>
+      <div class="app-grid" id="app-grid"></div>
+    </div>
+
+    <!-- ===== TELEFON WYŁĄCZONY ===== -->
+    <div class="screen" id="screen-off">
+      <div class="call-wrap">
+        <div class="icon" style="opacity:.5">📴</div>
+        <div class="name">Telefon zamknięty</div>
+        <div class="status">Nie odbierasz połączeń. Kliknij, żeby uruchomić telefon.</div>
+        <button class="btn" style="width:auto;padding:12px 28px" onclick="powerOn()">⏻ Uruchom telefon</button>
+        <div id="off-msg" class="msg"></div>
+      </div>
+    </div>
+
+    <!-- ===== BANK ===== -->
+    <div class="screen" id="screen-bank">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <header><div class="brand">🏦 Avaloria Federal Bank</div></header>
+      <div class="wrap">
+        <div class="greeting" style="color:var(--muted);margin-bottom:16px">Witaj, <b id="customer-name" style="color:var(--cream)"></b></div>
+        <div class="balance-card">
+          <div class="label">Saldo</div>
+          <div class="amount" id="balance-amount">—</div>
+          <div class="accno" id="account-number">—</div>
+        </div>
+        <div class="tabs">
+          <button class="active" data-tab="transfer" onclick="switchBankTab('transfer')">Przelew</button>
+          <button data-tab="history" onclick="switchBankTab('history')">Historia</button>
+          <button data-tab="loans" onclick="switchBankTab('loans')">Kredyty</button>
+          <button data-tab="invoices" onclick="switchBankTab('invoices')">Faktury <span id="inv-badge" class="pill warn" style="display:none"></span></button>
+        </div>
+        <div class="tabpanel active" id="bank-tab-transfer">
+          <div class="panel">
+            <div class="field"><label>Numer konta odbiorcy</label><input id="t-to" type="text" placeholder="AFB-0000-0000-0000"></div>
+            <div class="field"><label>Kwota</label><input id="t-amount" type="number" min="1"></div>
+            <div class="field"><label>Tytuł (opcjonalnie)</label><input id="t-title" type="text"></div>
+            <button class="btn" onclick="doTransfer()">Wyślij przelew</button>
+            <div id="transfer-msg" class="msg"></div>
+          </div>
+        </div>
+        <div class="tabpanel" id="bank-tab-history">
+          <div class="panel"><div id="history-list"></div></div>
+        </div>
+        <div class="tabpanel" id="bank-tab-loans">
+          <div class="panel"><div id="loans-list"></div></div>
+        </div>
+        <div class="tabpanel" id="bank-tab-invoices">
+          <div class="panel"><div id="invoices-list"></div><div id="invoices-msg" class="msg"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ĆWIERK (Twitter) - FEED ===== -->
+    <div class="screen" id="screen-cwierk">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <header>
+        <div class="brand" style="font-size:1rem">🐦 Ćwierk</div>
+        <div class="avatar" style="width:30px;height:30px;font-size:.7rem" id="cwierk-my-avatar" onclick="showProfile(window.myCustomerId)"></div>
+      </header>
+      <div class="wrap" style="padding-top:4px">
+        <div id="tweet-feed"></div>
+      </div>
+    </div>
+
+    <!-- ===== ĆWIERK - WĄTEK Z KOMENTARZAMI ===== -->
+    <div class="screen" id="screen-cwierk-thread">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <header><div class="brand" style="font-size:.95rem">Ćwierk</div><button class="back-btn" onclick="showCwierk()">← Wstecz</button></header>
+      <div class="wrap" style="padding-bottom:20px;min-height:calc(100% - 200px)">
+        <div id="thread-tweet"></div>
+        <div style="border-top:1px solid rgba(217,176,92,.15);margin:14px 0"></div>
+        <div id="comments-list"></div>
+      </div>
+      <div style="position:sticky;bottom:72px;left:0;right:0;padding:10px;background:rgba(7,11,24,.97);z-index:36">
+        <div class="reply-indicator" id="reply-indicator">Odpowiadasz do <span id="reply-to-name"></span> <a href="#" onclick="cancelReply();return false" style="color:var(--muted)">(anuluj)</a></div>
+        <div style="display:flex;gap:8px">
+          <input id="comment-input" type="text" placeholder="Napisz komentarz..." style="flex:1;padding:10px;border-radius:20px;border:1px solid rgba(217,176,92,.3);background:#0b1026;color:var(--cream)">
+          <button class="btn" style="width:auto;padding:10px 16px" onclick="sendComment()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ĆWIERK - PROFIL ===== -->
+    <div class="screen" id="screen-profile">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <header><div class="brand" style="font-size:.95rem">Profil</div><button class="back-btn" onclick="showCwierk()">← Wstecz</button></header>
+      <div class="profile-header">
+        <div class="avatar" id="profile-avatar"></div>
+        <div class="name" id="profile-name"></div>
+        <div class="phone" id="profile-phone"></div>
+        <div class="count" id="profile-count"></div>
+      </div>
+      <div class="wrap" style="padding-top:0"><div id="profile-tweets"></div></div>
+    </div>
+
+    <!-- ===== WIADOMOŚCI - LISTA ===== -->
+    <div class="screen" id="screen-messages">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <header><div class="brand" style="font-size:1rem">💬 Wiadomości</div></header>
+      <div class="wrap">
+        <button class="btn secondary" style="margin-bottom:14px" onclick="startNewMessage()">✏️ Nowa wiadomość</button>
+        <div class="panel" id="newmsg-panel" style="display:none">
+          <div class="field"><label>Numer telefonu odbiorcy</label><input id="nm-phone" type="text" list="nm-contacts" placeholder="555-0000" autocomplete="off"><datalist id="nm-contacts"></datalist></div>
+          <div class="field"><label>Treść</label><textarea id="nm-content" class="fieldtxt" rows="3" maxlength="500"></textarea></div>
+          <button class="btn" onclick="sendNewMessage()">Wyślij</button>
+          <div id="nm-msg" class="msg"></div>
+        </div>
+        <div id="conversations-list"></div>
+      </div>
+    </div>
+
+    <!-- ===== WIADOMOŚCI - WĄTEK ===== -->
+    <div class="screen" id="screen-thread">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <header><div class="brand" style="font-size:.95rem" id="thread-with">Rozmowa</div><button class="back-btn" onclick="showMessages()">← Wstecz</button></header>
+      <div class="thread-body" id="thread-body"><div id="thread-messages"></div></div>
+      <div class="thread-input">
+        <input id="thread-input" type="text" maxlength="500" placeholder="Napisz wiadomość..." autocomplete="off">
+        <button class="btn" onclick="sendThreadMessage()">➤</button>
+      </div>
+    </div>
+
+    <!-- ===== KONTAKTY ===== -->
+    <div class="screen" id="screen-contacts">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <header><div class="brand" style="font-size:1rem">👤 Kontakty</div></header>
+      <div class="wrap">
+        <div class="panel">
+          <div class="field"><label>Numer telefonu</label><input id="c-phone" type="text" placeholder="555-0000"></div>
+          <div class="field"><label>Nazwa (opcjonalnie)</label><input id="c-label" type="text"></div>
+          <button class="btn" onclick="addContact()">Dodaj kontakt</button>
+          <div id="contact-msg" class="msg"></div>
+        </div>
+        <div id="contacts-list"></div>
+      </div>
+    </div>
+
+    <!-- ===== DZWONIENIE ===== -->
+    <div class="screen" id="screen-call">
+      <div class="call-wrap">
+        <div class="icon" id="call-icon">📞</div>
+        <div class="name" id="call-name">—</div>
+        <div class="status" id="call-status">Łączenie...</div>
+        <div class="call-buttons">
+          <button id="call-accept-btn" style="display:none;background:#22c55e" onclick="acceptCall()">✅</button>
+          <button style="background:#ef4444" onclick="hangupCall()">📵</button>
+        </div>
+        <audio id="remote-audio" autoplay></audio>
+      </div>
+    </div>
+
+    <!-- ===== USTAWIENIA ===== -->
+    <div class="screen" id="screen-settings">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <header><div class="brand" style="font-size:1rem">⚙️ Ustawienia</div></header>
+      <div class="wrap">
+        <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+          <label>📱 Twój numer telefonu</label>
+          <div id="settings-number" style="font-family:monospace;font-size:1.25rem;color:var(--gold-lt);letter-spacing:.04em">—</div>
+          <div id="settings-owner" style="color:var(--muted);font-size:.78rem"></div>
+        </div>
+        <div class="settings-row"><label>📐 Rozmiar telefonu</label><select id="size-select"></select><div id="size-hint" style="color:var(--muted);font-size:.72rem;margin-top:6px"></div></div>
+        <div class="settings-row"><label>🖼️ Tapeta</label><select id="wallpaper-select"></select></div>
+        <div class="settings-row"><label>🎙️ Mikrofon</label><select id="mic-select"></select></div>
+        <div class="settings-row"><label>🔊 Słuchawki / głośnik</label><select id="speaker-select"></select></div>
+        <div class="settings-row"><label>☀️ Jasność ekranu</label><input type="range" id="brightness-slider" min="30" max="100" value="100"></div>
+        <div class="settings-row"><label>🔔 Głośność dzwonka</label><input type="range" id="ring-volume" min="0" max="100" value="70"></div>
+        <div id="settings-msg" class="msg" style="min-height:1.2em"></div>
+        <button class="btn" style="margin-top:14px" onclick="showChars()">🔄 Zmień postać</button>
+        <button class="btn secondary" style="margin-top:10px" onclick="switchCharacter()">⎋ Wyloguj z tej postaci</button>
+        <button class="btn" style="margin-top:10px;background:#7a1f1f;border-color:#a33" onclick="closePhoneFully()">✖ Zamknij telefon</button>
+        <div class="meta" style="margin-top:6px">Zamyka aplikację telefonu jak „wyjdź z gry” — kursor i sterowanie wracają do gry. Włączysz ją ponownie jak zwykle (ikona / skrót F8).</div>
+      </div>
+    </div>
+
+
+    <!-- ===== FRAKCJA: FAKTURY ===== -->
+    <div class="screen" id="screen-faction">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <header><div class="brand" style="font-size:1rem" id="fac-title">Faktury</div><div id="fac-rank" style="font-size:.72rem;color:var(--muted)"></div></header>
+      <div class="wrap">
+        <div class="ftabs" id="fac-tabs"></div>
+        <div id="fac-body"></div>
+      </div>
+    </div>
+
+    <!-- ===== SKLEP ===== -->
+    <div class="screen" id="screen-shop">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <header><div class="brand" style="font-size:1rem">🛒 Sklep</div></header>
+      <div class="wrap">
+        <div id="shop-msg" class="msg" style="min-height:1.2em;margin:0 0 8px"></div>
+        <div id="shop-items"></div>
+        <div id="shop-orders"></div>
+      </div>
+    </div>
+
+    <!-- ===== ZAPAMIĘTANE POSTACIE ===== -->
+    <div class="screen" id="screen-chars">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <header><div class="brand" style="font-size:1rem">🔄 Postacie</div></header>
+      <div class="wrap">
+        <div id="chars-msg" class="msg" style="min-height:1.2em;margin:0 0 8px"></div>
+        <div id="chars-list"></div>
+        <button class="btn secondary" style="margin-top:12px" onclick="switchCharacter()">➕ Zaloguj inną postać</button>
+        <p style="color:var(--muted);font-size:.72rem;margin-top:14px">Zapamiętane postacie są przechowywane tylko na tym urządzeniu. „Zapomnij” usuwa postać z listy i kończy jej sesję.</p>
+      </div>
+    </div>
+
+    <!-- ===== PLECAK ===== -->
+    <div class="screen" id="screen-inventory">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <header><div class="brand" style="font-size:1rem">🎒 Plecak</div></header>
+      <div class="wrap">
+        <div id="inv-msg" class="msg" style="min-height:1.2em;margin:0 0 8px"></div>
+        <div id="inv-body"></div>
+      </div>
+    </div>
+
+    <!-- ===== DARKWEB ===== -->
+    <div class="screen" id="screen-darkweb">
+      <div class="status-bar"><span class="time clock-sync">--:--</span><span class="icons">📶 📡 🔋</span></div>
+      <header><div class="brand" style="font-size:1rem;color:#ef4444">☠️ ???</div><div id="dw-balance" style="font-family:monospace;color:var(--gold-lt);font-size:.85rem"></div></header>
+      <div class="wrap">
+        <div class="tabs" id="dw-tabs">
+          <button data-tab="shop" class="active" onclick="dwTab('shop')">Towary</button>
+          <button data-tab="contracts" onclick="dwTab('contracts')">Zlecenia</button>
+          <button data-tab="chat" onclick="dwTab('chat')">Czat</button>
+          <button data-tab="crypto" onclick="dwTab('crypto')">Krypto</button>
+        </div>
+        <div id="dw-msg" class="msg" style="min-height:1.2em;margin:0 0 8px"></div>
+        <div id="dw-body"></div>
+      </div>
+    </div>
+
+    <!-- przyciski i okno Ćwierka są poza przewijanym ekranem, żeby nie jeździły razem ze zdjęciami -->
+      <button class="fab" onclick="openComposeModal()">+</button>
+
+      <div class="modal-overlay" id="compose-modal">
+        <div class="modal-sheet">
+          <textarea id="tweet-input" maxlength="280" placeholder="Co się dzieje?"></textarea>
+          <img id="img-preview" class="img-preview">
+          <div class="modal-row">
+            <input type="file" id="tweet-image-input" accept="image/*" style="display:none" onchange="handleImageSelect(event)">
+            <button class="btn secondary" onclick="document.getElementById('tweet-image-input').click()">📷 Zdjęcie</button>
+            <div style="flex:1"></div>
+            <button class="btn secondary" onclick="closeComposeModal()">Anuluj</button>
+            <button class="btn" onclick="postTweet()">Ćwierknij</button>
+          </div>
+          <div id="tweet-msg" class="msg"></div>
+        </div>
+      </div>
+
+    <div class="bottom-nav" id="bottom-nav" style="display:none">
+      <button onclick="navBack()">◀</button>
+      <button onclick="closePhoneApp()">●</button>
+    </div>
+    <div class="brightness-overlay" id="brightness-overlay"></div>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<script>
+let token = localStorage.getItem('afb_token') || null;
+
+// ====== API ======
+async function api(path, method='GET', body=null) {
+  const headers = {'Content-Type':'application/json'};
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(path, {method, headers, body: body ? JSON.stringify(body) : undefined});
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Błąd serwera.');
+  return data;
+}
+const fmt = n => Number(n).toLocaleString('pl-PL') + ' $';
+function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+function initials(first, last) { return `${(first||'')[0]||''}${(last||'')[0]||''}`.toUpperCase(); }
+
+// ====== NAWIGACJA MIĘDZY EKRANAMI ======
+const ALL_SCREENS = ['screen-chars','screen-login','screen-home','screen-bank','screen-cwierk','screen-cwierk-thread','screen-profile','screen-messages','screen-thread','screen-contacts','screen-call','screen-settings','screen-shop','screen-darkweb','screen-inventory','screen-faction','screen-off'];
+let lastMainScreen = 'screen-home';
+
+let navStack = [];
+let currentScreenId = 'screen-login';
+const NO_STACK = ['screen-login', 'screen-off', 'screen-call'];
+function showScreen(id, { isMain = false, back = false } = {}) {
+  if (id !== 'screen-darkweb' && typeof stopDarkChat === 'function') stopDarkChat();
+  // stos ekranów: wejście głębiej zapamiętuje poprzedni ekran, Wstecz go przywraca
+  if (id === 'screen-home' || id === 'screen-login' || id === 'screen-off') navStack = [];
+  else if (!back && id !== currentScreenId && !NO_STACK.includes(currentScreenId) && currentScreenId !== 'screen-home') navStack.push(currentScreenId);
+  currentScreenId = id;
+  document.body.dataset.screen = id;
+  ALL_SCREENS.forEach(s => document.getElementById(s).classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('bottom-nav').style.display = (id === 'screen-login' || id === 'screen-off') ? 'none' : 'flex';
+  if (isMain) lastMainScreen = id;
+}
+function navBack() {
+  if (currentScreenId === 'screen-home' || currentScreenId === 'screen-login' || currentScreenId === 'screen-off') return;
+  stopThreadPolling();
+  if (currentScreenId === 'screen-call') return; // podczas rozmowy użyj czerwonej słuchawki
+  const prev = navStack.pop();
+  if (prev) showScreen(prev, { back: true });
+  else { showScreen('screen-home', { isMain: true }); refreshFactions(); }
+}
+// Home (●): z aplikacji wraca na ekran główny; będąc już na ekranie głównym chowa telefon
+function closePhoneApp() {
+  if (currentScreenId === 'screen-login' || currentScreenId === 'screen-off' || currentScreenId === 'screen-home') {
+    if (window.electronAPI && window.electronAPI.closePhone) window.electronAPI.closePhone();
+    return;
+  }
+  stopThreadPolling();
+  showScreen('screen-home', { isMain: true });
+  refreshFactions();
+}
+
+// ====== ZEGAR ======
+function updateClock() {
+  const time = new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  document.querySelectorAll('.clock-sync').forEach(el => el.textContent = time);
+}
+setInterval(updateClock, 10000);
+updateClock();
+
+// ====== LOGOWANIE ======
+async function login() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const msg = document.getElementById('login-msg');
+  msg.textContent = ''; msg.className = 'msg';
+  try {
+    const rememberBox = document.getElementById('remember');
+    pendingRemember = !rememberBox || rememberBox.checked;
+    pendingUsername = username;
+    const data = await api('/customer/login', 'POST', {username, password, remember: pendingRemember});
+    token = data.token;
+    localStorage.setItem('afb_token', token);
+    if (data.must_change_password) {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('change-pw-form').style.display = 'block';
+    } else {
+      enterPhone();
+    }
+  } catch (err) { msg.textContent = err.message; msg.className = 'msg error'; }
+}
+
+async function changePassword() {
+  const newPw = document.getElementById('new-password').value;
+  const msg = document.getElementById('change-pw-msg');
+  msg.textContent=''; msg.className='msg';
+  try {
+    await api('/customer/change-password', 'POST', {new_password: newPw});
+    msg.textContent = 'Hasło ustawione!'; msg.className = 'msg ok';
+    setTimeout(enterPhone, 500);
+  } catch (err) { msg.textContent = err.message; msg.className = 'msg error'; }
+}
+
+function logout() { localStorage.removeItem('afb_token'); token = null; location.reload(); }
+// „Wyloguj / zmień postać”: kończy sesję na serwerze, schodzi ze służby i wraca do logowania
+async function switchCharacter() {
+  if (!confirm('Wylogować się z tej postaci? Zalogujesz się inną.')) return;
+  try { if (currentCallId || peerConnection) hangupCall(); } catch {}
+  try { await api('/customer/logout', 'POST', { keep_session: isRemembered(token) }); } catch {}
+  try { stopRing(); stopThreadPolling(); if (callSocket) { const sk = callSocket; callSocket = null; sk.close(); } } catch {}
+  logout();
+}
+
+// ====== EKRAN GŁÓWNY ======
+const APPS = [
+  { id: 'bank',     name: 'Bank',        icon: '🏦', color: 'linear-gradient(135deg,#d9b05c,#8a6a2d)' },
+  { id: 'cwierk',   name: 'Ćwierk',      icon: '🐦', color: 'linear-gradient(135deg,#3b82f6,#1e3a8a)' },
+  { id: 'wiadomosci', name: 'Wiadomości', icon: '💬', color: 'linear-gradient(135deg,#22c55e,#14532d)' },
+  { id: 'kontakty', name: 'Kontakty',    icon: '👤', color: 'linear-gradient(135deg,#a78bfa,#4c1d95)' },
+  { id: 'sklep',    name: 'Sklep',       icon: '🛒', color: 'linear-gradient(135deg,#f59e0b,#78350f)' },
+  { id: 'plecak',    name: 'Plecak',      icon: '🎒', color: 'linear-gradient(135deg,#0ea5e9,#0c4a6e)' },
+  { id: 'ustawienia', name: 'Ustawienia', icon: '⚙️', color: 'linear-gradient(135deg,#64748b,#1e293b)' },
+];
+const DARKWEB_APP = { id: 'darkweb', name: '???', icon: '☠️', color: 'linear-gradient(135deg,#7f1d1d,#1a0505)' };
+
+const FACTION_APP_COLORS = { EMS: 'linear-gradient(135deg,#ef4444,#7f1d1d)', DOT: 'linear-gradient(135deg,#f59e0b,#92400e)', LAPD: 'linear-gradient(135deg,#3b82f6,#1e3a8a)', LAFD: 'linear-gradient(135deg,#f97316,#7c2d12)' };
+const MDT_APP = { id: 'mdt-tablet', name: 'Tablet MDT', icon: '🛡️', color: 'linear-gradient(135deg,#334155,#0f172a)' };
+function factionApps() {
+  const mine = window.myFactions || [];
+  const launcher = mine.length ? [MDT_APP] : [];   // osobna aplikacja (tablet) – telefon zostaje, tu tylko skrót
+  const panels = mine.filter(f => f.panel || f.invoices).map(f => ({ id: 'fak-' + f.faction, name: 'Panel ' + f.label, icon: f.icon, color: FACTION_APP_COLORS[f.faction] || 'linear-gradient(135deg,#64748b,#1e293b)' }));
+  return launcher.concat(panels);
+}
+async function refreshFactions() {
+  try {
+    const list = await api('/customer/factions/me');
+    const changed = JSON.stringify(list) !== JSON.stringify(window.myFactions || []);
+    window.myFactions = list;
+    if (changed) renderAppGrid();
+  } catch {}
+}
+setInterval(() => { if (token && document.getElementById('screen-home').classList.contains('active')) refreshFactions(); }, 60000);
+
+// po wiadomości do Nieznajomego aplikacja ??? ma się pojawić od razu, bez ponownego logowania
+async function refreshDarkwebFlag() {
+  if (window.darkwebUnlocked) return;
+  setTimeout(async () => {
+    try {
+      const d = await api('/customer/me');
+      if (d.customer.darkweb_unlocked && !window.darkwebUnlocked) { window.darkwebUnlocked = true; renderAppGrid(); }
+    } catch { }
+  }, 700);
+}
+function renderAppGrid() {
+  const apps = [...APPS, ...factionApps(), ...(window.darkwebUnlocked ? [DARKWEB_APP] : [])];
+  document.getElementById('app-grid').innerHTML = apps.map(a => `
+    <div class="app-icon" onclick="openApp('${a.id}')">
+      <div class="tile" style="background:${a.color}">${a.icon}</div>
+      <div class="name">${a.name}</div>
+    </div>`).join('');
+}
+
+function openApp(id) {
+  if (id === 'bank') showBank();
+  if (id === 'cwierk') showCwierk();
+  if (id === 'wiadomosci') showMessages();
+  if (id === 'kontakty') showContacts();
+  if (id === 'sklep') showShop();
+  if (id === 'plecak') showInventory();
+  if (id === 'ustawienia') showSettings();
+  if (id === 'darkweb') showDarkweb();
+  if (id === 'mdt-tablet') { window.open('/mdt/?sso=1', '_blank'); return; }
+  if (id.startsWith('fak-')) openFaction(id.slice(4));
+}
+
+async function enterPhone() {
+  showScreen('screen-home', { isMain: true });
+  try {
+    const data = await api('/customer/me');
+    window.myCustomerId = data.customer.customer_id;
+    window.myFirstName = data.customer.first_name;
+    window.myLastName = data.customer.last_name;
+    window.myPhoneNumber = data.customer.phone_number;
+    window.myPhoneName = `${data.customer.first_name} ${data.customer.last_name}`;
+    if (pendingRemember || isRemembered(token)) rememberChar(token, window.myPhoneName, window.myPhoneNumber);
+    pendingRemember = false;
+    window.darkwebUnlocked = data.customer.darkweb_unlocked;
+    window.phoneOn = data.customer.phone_on !== false;
+    if (!window.phoneOn) { try { await api('/customer/phone/power', 'POST', { on: true }); window.phoneOn = true; } catch { showScreen('screen-off'); return; } }
+    document.getElementById('phone-user').textContent = `${data.customer.first_name} ${data.customer.last_name}`;
+    document.getElementById('phone-number-display').textContent = data.customer.phone_number || '';
+    try { window.myFactions = await api('/customer/factions/me'); } catch { window.myFactions = []; }
+    renderAppGrid();
+    connectCallSocket();
+  } catch { logout(); }
+}
+
+// ====== BANK ======
+async function showBank() {
+  showScreen('screen-bank');
+  const data = await api('/customer/me');
+  document.getElementById('customer-name').textContent = `${data.customer.first_name} ${data.customer.last_name}`;
+  const acc = data.accounts[0];
+  if (acc) {
+    document.getElementById('balance-amount').textContent = fmt(acc.balance);
+    document.getElementById('account-number').textContent = acc.account_number;
+  } else {
+    document.getElementById('balance-amount').textContent = '—';
+    document.getElementById('account-number').textContent = 'Brak konta bankowego — załóż je w oddziale banku';
+  }
+  renderHistory(data.transactions);
+  renderLoans(data.loans);
+}
+
+function switchBankTab(tab) {
+  document.querySelectorAll('#screen-bank .tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  ['transfer','history','loans','invoices'].forEach(t => document.getElementById('bank-tab-'+t).classList.toggle('active', t === tab));
+  if (tab === 'invoices') loadInvoices();
+}
+
+function renderHistory(transactions) {
+  const el = document.getElementById('history-list');
+  if (!transactions.length) { el.innerHTML = '<div id="empty">Brak transakcji.</div>'; return; }
+  el.innerHTML = transactions.map(t => {
+    const sign = t.direction === 'IN' ? '+' : '-';
+    const cls = t.direction === 'IN' ? 'in' : 'out';
+    const date = new Date(t.created_at).toLocaleString('pl-PL');
+    return `<div class="tx-row"><div><div class="title">${escapeHtml(t.title || t.transaction_type)}</div><div class="meta">${date}</div></div><div class="amt ${cls}">${sign}${fmt(t.amount)}</div></div>`;
+  }).join('');
+}
+
+function renderLoans(loans) {
+  const el = document.getElementById('loans-list');
+  if (!loans.length) { el.innerHTML = '<div id="empty">Brak kredytów.</div>'; return; }
+  el.innerHTML = loans.map(l => `<div class="loan-row">Kredyt ${fmt(l.amount)} @ ${l.interest_rate}% <span class="status-pill ${l.status}">${l.status}</span><br><span style="color:var(--muted);font-size:.8rem">Pozostało: ${fmt(l.remaining_balance)}</span></div>`).join('');
+}
+
+async function doTransfer() {
+  const to_account_number = document.getElementById('t-to').value.trim();
+  const amount = parseInt(document.getElementById('t-amount').value, 10);
+  const title = document.getElementById('t-title').value.trim();
+  const msg = document.getElementById('transfer-msg');
+  msg.textContent=''; msg.className='msg';
+  try {
+    await api('/customer/transfer', 'POST', {to_account_number, amount, title});
+    msg.textContent = 'Przelew wykonany!'; msg.className = 'msg ok';
+    document.getElementById('t-to').value = ''; document.getElementById('t-amount').value = ''; document.getElementById('t-title').value = '';
+    showBank();
+  } catch (err) { msg.textContent = err.message; msg.className = 'msg error'; }
+}
+
+// ====== ĆWIERK (feed) ======
+let selectedImageBase64 = null;
+
+async function showCwierk() {
+  showScreen('screen-cwierk', { isMain: true });
+  document.getElementById('cwierk-my-avatar').textContent = initials(window.myFirstName, window.myLastName);
+  const tweets = await api('/customer/tweets');
+  document.getElementById('tweet-feed').innerHTML = tweets.map(renderTweetCard).join('') || '<div id="empty">Brak tweetów. Bądź pierwszy!</div>';
+}
+
+function renderTweetCard(t) {
+  return `
+    <div class="tweet-card">
+      <div class="avatar" onclick="showProfile(${t.customer_id})">${initials(t.first_name, t.last_name)}</div>
+      <div class="tweet-body">
+        <span class="name" onclick="showProfile(${t.customer_id})">${escapeHtml(t.first_name)} ${escapeHtml(t.last_name)}</span><span class="time">${new Date(t.created_at).toLocaleString('pl-PL',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})}</span>
+        ${t.content ? `<div class="text">${escapeHtml(t.content)}</div>` : ''}
+        ${t.image ? `<img src="${t.image}">` : ''}
+        <div class="tweet-actions">
+          <button class="${t.liked_by_me ? 'liked' : ''}" onclick="toggleTweetLike(${t.tweet_id}, this)">❤️ <span>${t.like_count}</span></button>
+          <button onclick="openThread(${t.tweet_id})">💬 ${t.comment_count}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function openComposeModal() { document.getElementById('compose-modal').classList.add('active'); }
+function closeComposeModal() {
+  document.getElementById('compose-modal').classList.remove('active');
+  document.getElementById('tweet-input').value = '';
+  document.getElementById('img-preview').style.display = 'none';
+  selectedImageBase64 = null;
+}
+function handleImageSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    selectedImageBase64 = reader.result;
+    const preview = document.getElementById('img-preview');
+    preview.src = selectedImageBase64; preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+async function postTweet() {
+  const input = document.getElementById('tweet-input');
+  const msg = document.getElementById('tweet-msg');
+  msg.textContent=''; msg.className='msg';
+  try {
+    await api('/customer/tweets', 'POST', { content: input.value, image: selectedImageBase64 });
+    closeComposeModal();
+    showCwierk();
+  } catch (err) { msg.textContent = err.message; msg.className = 'msg error'; }
+}
+async function toggleTweetLike(tweetId, btn) {
+  const res = await api(`/customer/tweets/${tweetId}/like`, 'POST');
+  const span = btn.querySelector('span');
+  span.textContent = parseInt(span.textContent, 10) + (res.liked ? 1 : -1);
+  btn.classList.toggle('liked', res.liked);
+}
+
+// ====== ĆWIERK (wątek z komentarzami) ======
+let currentTweetId = null;
+let replyToCommentId = null;
+
+async function openThread(tweetId) {
+  currentTweetId = tweetId; replyToCommentId = null;
+  showScreen('screen-cwierk-thread');
+  document.getElementById('reply-indicator').style.display = 'none';
+  await loadThreadAndComments();
+}
+
+async function loadThreadAndComments() {
+  const tweets = await api('/customer/tweets');
+  const t = tweets.find(x => x.tweet_id === currentTweetId);
+  if (t) document.getElementById('thread-tweet').innerHTML = renderTweetCard(t);
+
+  const comments = await api(`/customer/tweets/${currentTweetId}/comments`);
+  const top = comments.filter(c => !c.parent_comment_id);
+  const byParent = {};
+  comments.forEach(c => { if (c.parent_comment_id) { (byParent[c.parent_comment_id] = byParent[c.parent_comment_id]||[]).push(c); } });
+
+  function renderComment(c, isReply) {
+    const replies = (byParent[c.comment_id] || []).map(r => renderComment(r, true)).join('');
+    return `<div class="comment-row ${isReply?'reply':''}">
+      <div class="comment-head"><span class="name" onclick="showProfile(${c.customer_id})">${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)}</span><span class="time">${new Date(c.created_at).toLocaleString('pl-PL',{hour:'2-digit',minute:'2-digit'})}</span></div>
+      <div class="comment-text">${escapeHtml(c.content)}</div>
+      <div class="comment-actions">
+        <button class="${c.liked_by_me?'liked':''}" onclick="toggleCommentLike(${c.comment_id}, this)">❤️ ${c.like_count}</button>
+        <button onclick="startReply(${c.comment_id}, '${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)}')">Odpowiedz</button>
+      </div>
+      ${replies}
+    </div>`;
+  }
+
+  document.getElementById('comments-list').innerHTML = top.map(c => renderComment(c, false)).join('') || '<div id="empty">Brak komentarzy. Napisz pierwszy!</div>';
+}
+
+function startReply(commentId, name) {
+  replyToCommentId = commentId;
+  document.getElementById('reply-to-name').textContent = name;
+  document.getElementById('reply-indicator').style.display = 'block';
+  document.getElementById('comment-input').focus();
+}
+function cancelReply() { replyToCommentId = null; document.getElementById('reply-indicator').style.display = 'none'; }
+
+async function sendComment() {
+  const input = document.getElementById('comment-input');
+  if (!input.value.trim()) return;
+  try {
+    await api(`/customer/tweets/${currentTweetId}/comments`, 'POST', { content: input.value, parent_comment_id: replyToCommentId });
+    input.value = '';
+    cancelReply();
+    await loadThreadAndComments();
+  } catch (err) { alert(err.message); }
+}
+async function toggleCommentLike(commentId, btn) {
+  await api(`/customer/comments/${commentId}/like`, 'POST');
+  await loadThreadAndComments();
+}
+
+// ====== ĆWIERK (profil) ======
+async function showProfile(customerId) {
+  showScreen('screen-profile');
+  const profile = await api(`/customer/profile/${customerId}`);
+  document.getElementById('profile-avatar').textContent = initials(profile.first_name, profile.last_name);
+  document.getElementById('profile-name').textContent = `${profile.first_name} ${profile.last_name}`;
+  document.getElementById('profile-phone').textContent = customerId == window.myCustomerId ? (profile.phone_number || '') : '';
+  document.getElementById('profile-count').textContent = `${profile.tweet_count} tweetów`;
+
+  const tweets = await api(`/customer/tweets?customer_id=${customerId}`);
+  document.getElementById('profile-tweets').innerHTML = tweets.map(renderTweetCard).join('') || '<div id="empty">Brak tweetów.</div>';
+}
+
+// ====== WIADOMOŚCI ======
+function escapeAttr(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function showMessages() {
+  stopThreadPolling();
+  showScreen('screen-messages', { isMain: true });
+  try {
+    const convos = await api('/customer/messages/conversations');
+    document.getElementById('conversations-list').innerHTML = convos.map(c => {
+      const name = `${c.contact.first_name} ${c.contact.last_name}`.trim();
+      return `<div class="tx-row" style="cursor:pointer" data-name="${escapeAttr(name)}" onclick="openMsgThread(${c.other_id}, this.dataset.name)">
+        <div><div class="title">${escapeHtml(name)}</div><div class="meta">${escapeHtml(c.content).slice(0,40)}</div></div>
+        <div class="meta">${new Date(c.created_at).toLocaleString('pl-PL', {hour:'2-digit',minute:'2-digit'})}</div>
+      </div>`;
+    }).join('') || '<div id="empty">Brak wiadomości.</div>';
+  } catch (err) {
+    document.getElementById('conversations-list').innerHTML = `<div id="empty">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function startNewMessage() {
+  const panel = document.getElementById('newmsg-panel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  if (panel.style.display === 'none') return;
+  try {
+    const contacts = await api('/customer/contacts');
+    document.getElementById('nm-contacts').innerHTML = contacts.map(c => `<option value="${escapeAttr(c.phone_number)}">${escapeAttr(c.label)}</option>`).join('');
+  } catch {}
+  document.getElementById('nm-phone').focus();
+}
+
+async function sendNewMessage() {
+  const phone = document.getElementById('nm-phone').value.trim();
+  const content = document.getElementById('nm-content').value.trim();
+  const msg = document.getElementById('nm-msg');
+  msg.textContent = ''; msg.className = 'msg';
+  if (!phone || !content) { msg.textContent = 'Podaj numer i treść.'; msg.className = 'msg error'; return; }
+  try {
+    const res = await api('/customer/messages', 'POST', { to_phone_number: phone, content });
+    refreshDarkwebFlag();
+    document.getElementById('nm-phone').value = ''; document.getElementById('nm-content').value = '';
+    document.getElementById('newmsg-panel').style.display = 'none';
+    openMsgThread(res.to_customer_id, phone);
+  } catch (err) { msg.textContent = err.message; msg.className = 'msg error'; }
+}
+
+let currentThreadId = null;
+let threadTimer = null;
+function stopThreadPolling() { if (threadTimer) { clearInterval(threadTimer); threadTimer = null; } }
+
+async function openMsgThread(otherCustomerId, name) {
+  showScreen('screen-thread');
+  document.getElementById('thread-with').textContent = name;
+  currentThreadId = otherCustomerId;
+  await loadThread(true);
+  stopThreadPolling();
+  threadTimer = setInterval(() => {
+    if (document.getElementById('screen-thread').classList.contains('active')) loadThread(false); else stopThreadPolling();
+  }, 4000);
+  const input = document.getElementById('thread-input');
+  input.focus();
+}
+
+async function loadThread(forceScroll) {
+  if (!currentThreadId) return;
+  let msgs;
+  try { msgs = await api('/customer/messages/' + currentThreadId); } catch { return; }
+  const body = document.getElementById('thread-body');
+  const atBottom = forceScroll || (body.scrollHeight - body.scrollTop - body.clientHeight < 60);
+  const el = document.getElementById('thread-messages');
+  el.innerHTML = msgs.map(m => {
+    const mine = Number(m.from_customer_id) === Number(window.myCustomerId);
+    return `<div style="text-align:${mine ? 'right' : 'left'};margin-bottom:8px"><span style="display:inline-block;background:${mine ? 'rgba(217,176,92,.25)' : 'rgba(255,255,255,.08)'};padding:8px 12px;border-radius:14px;max-width:75%;font-size:.86rem;text-align:left;word-break:break-word">${escapeHtml(m.content)}</span></div>`;
+  }).join('') || '<div id="empty">Napisz pierwszą wiadomość.</div>';
+  if (atBottom) body.scrollTop = body.scrollHeight;
+}
+
+async function sendThreadMessage() {
+  const input = document.getElementById('thread-input');
+  const content = input.value.trim();
+  if (!content || !currentThreadId) return;
+  input.disabled = true;
+  try {
+    await api('/customer/messages', 'POST', { to_customer_id: currentThreadId, content });
+    refreshDarkwebFlag();
+    input.value = '';
+    await loadThread(true);
+  } catch (err) { alert(err.message); }
+  input.disabled = false;
+  input.focus();
+}
+document.getElementById('thread-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendThreadMessage(); } });
+
+// ====== FAKTURY (strona płacącego, w appce Bank) ======
+const INV_STATUS = { OCZEKUJE: ['do zapłaty', 'warn'], OPLACONA: ['opłacona', 'ok'], ANULOWANA: ['anulowana', 'off'] };
+async function loadInvoices() {
+  const el = document.getElementById('invoices-list');
+  try {
+    const { pending, recent } = await api('/customer/invoices');
+    const badge = document.getElementById('inv-badge');
+    badge.textContent = pending.length; badge.style.display = pending.length ? 'inline-block' : 'none';
+    const row = (i, withPay) => `<div class="tx-row"><div>
+        <div class="title">#${i.invoice_id} ${escapeHtml(i.faction)} — ${escapeHtml(i.title)}</div>
+        <div class="meta">${escapeHtml(i.i_first)} ${escapeHtml(i.i_last)} · ${new Date(i.created_at).toLocaleString('pl-PL')}</div></div>
+        <div style="text-align:right"><div class="title">${fmt(i.amount)}</div>${withPay ? `<button class="btn small" style="margin-top:4px" onclick="payInvoice(${i.invoice_id})">Zapłać</button>` : '<span class="pill ok">opłacona</span>'}</div></div>`;
+    el.innerHTML = (pending.length ? pending.map(i => row(i, true)).join('') : '<div id="empty">Brak faktur do zapłaty.</div>')
+      + (recent.length ? `<div class="meta" style="margin:14px 0 4px">Ostatnio opłacone</div>${recent.map(i => row(i, false)).join('')}` : '');
+  } catch (err) { el.innerHTML = `<div id="empty">${escapeHtml(err.message)}</div>`; }
+}
+async function payInvoice(id) {
+  const msg = document.getElementById('invoices-msg');
+  msg.textContent = ''; msg.className = 'msg';
+  try {
+    await api(`/customer/invoices/${id}/pay`, 'POST');
+    msg.textContent = 'Faktura opłacona.'; msg.className = 'msg ok';
+    await loadInvoices();
+    const data = await api('/customer/me');
+    if (data.accounts[0]) document.getElementById('balance-amount').textContent = fmt(data.accounts[0].balance);
+    renderHistory(data.transactions);
+  } catch (err) { msg.textContent = err.message; msg.className = 'msg error'; }
+}
+
+// ====== FRAKCJA: FAKTURY EMS / DOT ======
+const RANK_LABEL = { PRACOWNIK: 'Pracownik', ZASTEPCA: 'Zastępca', SZEF: 'Szef' };
+const RANK_IDX = { PRACOWNIK: 0, ZASTEPCA: 1, SZEF: 2 };
+let curFaction = null, curRank = 'PRACOWNIK';
+
+async function openFaction(f) {
+  curFaction = f;
+  const info = (window.myFactions || []).find(x => x.faction === f);
+  if (!info) { showScreen('screen-home', { isMain: true }); return; }
+  curRank = info.rank;
+  showScreen('screen-faction', { isMain: true });
+  document.getElementById('fac-title').textContent = `${info.icon} Panel ${info.label}`;
+  document.getElementById('fac-rank').textContent = RANK_LABEL[info.rank] || info.rank;
+  const tabs = [['panel','Panel'],['zgloszenia','Zgłoszenia']];
+  if (f === 'EMS') tabs.push(['kartoteka','Kartoteka']);
+  if (info.invoices) tabs.push(['wystaw','Wystaw'],['moje','Moje faktury']);
+  tabs.push(['ludzie','Ludzie']);
+  if (RANK_IDX[curRank] >= 1) { if (info.invoices) tabs.push(['wszystkie','Wszystkie faktury']); tabs.push(['dziennik','Dziennik'],['skarbiec','Skarbiec']); }
+  document.getElementById('fac-tabs').innerHTML = tabs.map(([id, label]) => `<button data-tab="${id}" onclick="facTab('${id}')">${label}</button>`).join('');
+  facTab('panel');
+}
+
+function facTab(tab) {
+  document.querySelectorAll('#fac-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  const body = document.getElementById('fac-body');
+  if (tab === 'panel') { opsDashboard(); return; }
+  if (tab === 'zgloszenia') { opsTickets(); return; }
+  if (tab === 'kartoteka') { opsRecords(); return; }
+  if (tab === 'dziennik') { opsAudit(); return; }
+  if (tab === 'wystaw') {
+    body.innerHTML = `<div class="panel">
+      <div class="field"><label>Numer telefonu klienta</label><input id="fi-phone" type="text" placeholder="555-0000" autocomplete="off"></div>
+      <div class="field"><label>Nr zgłoszenia (opcjonalnie)</label><input id="fi-ticket" type="number" min="1" step="1" placeholder="np. 12"></div>
+      <div class="field"><label>Kwota ($)</label><input id="fi-amount" type="number" min="1" step="1"></div>
+      <div class="field"><label>Opis (za co)</label><input id="fi-title" type="text" maxlength="120" placeholder="np. Leczenie / Holowanie"></div>
+      <button class="btn" onclick="issueInvoice()">Wystaw fakturę</button>
+      <div id="fi-msg" class="msg"></div></div>`;
+  } else if (tab === 'moje' || tab === 'wszystkie') {
+    loadFacInvoices(tab === 'wszystkie');
+  } else if (tab === 'ludzie') {
+    opsPeople();
+  } else if (tab === 'skarbiec') {
+    loadTreasury();
+  }
+}
+
+async function issueInvoice() {
+  const msg = document.getElementById('fi-msg');
+  msg.textContent = ''; msg.className = 'msg';
+  try {
+    const r = await api(`/customer/factions/${curFaction}/invoices`, 'POST', {
+      to_phone_number: document.getElementById('fi-phone').value.trim(),
+      amount: Number(document.getElementById('fi-amount').value),
+      title: document.getElementById('fi-title').value.trim(),
+      ticket_id: document.getElementById('fi-ticket').value ? Number(document.getElementById('fi-ticket').value) : undefined,
+    });
+    msg.textContent = `Wystawiono fakturę #${r.invoice.invoice_id} dla ${r.customer}.`; msg.className = 'msg ok';
+    ['fi-phone','fi-amount','fi-title','fi-ticket'].forEach(id => document.getElementById(id).value = '');
+  } catch (err) { msg.textContent = err.message; msg.className = 'msg error'; }
+}
+
+async function loadFacInvoices(all) {
+  const body = document.getElementById('fac-body');
+  body.innerHTML = '<div class="panel"><div id="empty">Ładowanie…</div></div>';
+  try {
+    const list = await api(`/customer/factions/${curFaction}/invoices?scope=${all ? 'all' : 'mine'}`);
+    body.innerHTML = '<div class="panel">' + (list.map(i => {
+      const [label, cls] = INV_STATUS[i.status] || [i.status, ''];
+      return `<div class="tx-row"><div>
+        <div class="title">#${i.invoice_id} ${escapeHtml(i.title)}<span class="pill ${cls}">${label}</span></div>
+        <div class="meta">dla: ${escapeHtml(i.c_first)} ${escapeHtml(i.c_last)}${all ? ` · wystawił: ${escapeHtml(i.i_first)} ${escapeHtml(i.i_last)}` : ''} · ${new Date(i.created_at).toLocaleString('pl-PL')}</div></div>
+        <div style="text-align:right"><div class="title">${fmt(i.amount)}</div>${i.status === 'OCZEKUJE' ? `<button class="btn small secondary" style="margin-top:4px" onclick="cancelInvoice(${i.invoice_id}, ${all})">Anuluj</button>` : ''}</div></div>`;
+    }).join('') || '<div id="empty">Brak faktur.</div>') + '</div>';
+  } catch (err) { body.innerHTML = `<div class="panel"><div id="empty">${escapeHtml(err.message)}</div></div>`; }
+}
+async function cancelInvoice(id, all) {
+  if (!confirm(`Anulować fakturę #${id}?`)) return;
+  try { await api(`/customer/factions/${curFaction}/invoices/${id}/cancel`, 'POST'); } catch (err) { alert(err.message); }
+  loadFacInvoices(all);
+}
+
+async function loadFacMembers() {
+  const body = document.getElementById('fac-body');
+  try {
+    const list = await api(`/customer/factions/${curFaction}/members`);
+    body.innerHTML = '<div class="panel">' + list.map(m => `<div class="tx-row"><div>
+        <div class="title">${escapeHtml(m.first_name)} ${escapeHtml(m.last_name)}<span class="pill ${m.rank === 'SZEF' ? 'ok' : ''}">${RANK_LABEL[m.rank] || m.rank}</span></div>
+        <div class="meta">${escapeHtml(m.phone_number || '')}</div></div>
+        <div class="meta">${m.paid_invoices} opłaconych</div></div>`).join('')
+      + '</div><div class="meta" style="text-align:center">Rangi nadaje administracja przez role na Discordzie.</div>';
+  } catch (err) { body.innerHTML = `<div class="panel"><div id="empty">${escapeHtml(err.message)}</div></div>`; }
+}
+
+async function loadTreasury() {
+  const body = document.getElementById('fac-body');
+  body.innerHTML = '<div class="panel"><div id="empty">Ładowanie…</div></div>';
+  try {
+    const t = await api(`/customer/factions/${curFaction}/treasury`);
+    const info = (window.myFactions || []).find(x => x.faction === curFaction) || {};
+    let inv = '';
+    if (info.invoices) {
+      const o = await api(`/customer/factions/${curFaction}/overview`);
+      const tt = o.totals || {};
+      inv = `<div class="kpi">
+        <div><b>${fmt(tt.paid_sum || 0)}</b><span>Faktury opłacone</span></div>
+        <div><b>${tt.pending || 0}</b><span>Do zapłaty</span></div></div>`;
+    }
+    const KIND = { INVOICE: 'faktura', VAT: 'VAT', DOTACJA: 'dotacja', WYPLATA: 'wypłata', PAYOUT: 'wypłata szefa', PRZELEW: 'przelew', SKLEP: 'sklep', KRYPTO_ZAKUP: 'kantor (zakup)', KRYPTO_SPRZEDAZ: 'kantor (sprzedaż)', ZDRAPKA: 'zdrapka', ZASILENIE: 'zasilenie' };
+    body.innerHTML = `
+      <div class="panel" style="text-align:center">
+        <div class="meta">Numer konta frakcji</div>
+        <div style="font-family:monospace;font-size:1.1rem;color:var(--gold-lt);letter-spacing:.04em">${escapeHtml(t.account_number || '—')}</div>
+        <div style="font-size:1.6rem;margin-top:6px">${fmt(t.balance)}</div>
+        ${info.invoices ? `<div class="meta">Z każdej opłaconej faktury ${t.vat_pct}% trafia do banku państwa (VAT)</div>` : ''}
+      </div>${inv}
+      <div class="panel"><div class="meta" style="margin-bottom:6px">Wypłata dla pracownika (zarząd)</div>
+        <div class="field"><label>Numer telefonu pracownika</label><input id="tr-phone" type="text" placeholder="555-0000" autocomplete="off"></div>
+        <div class="field"><label>Kwota ($)</label><input id="tr-amount" type="number" min="1" step="1"></div>
+        <div class="field"><label>Tytuł</label><input id="tr-title" type="text" maxlength="120" placeholder="np. Wypłata za tydzień"></div>
+        <button class="btn" onclick="transferTreasury()">Wypłać na konto pracownika</button><div id="tr-msg" class="msg"></div></div>
+      <div class="panel"><div class="meta" style="margin-bottom:6px">Historia skarbca</div>
+        ${t.history.map(h => `<div class="tx-row"><div><div class="title">${escapeHtml(KIND[h.kind] || h.kind)}${h.ref ? ' · ' + escapeHtml(h.ref) : ''}</div>
+          <div class="meta">${fdt(h.created_at)}${h.first_name ? ' · ' + who(h.first_name, h.last_name) : ''}${h.counterparty ? ' · ' + escapeHtml(h.counterparty) : ''}</div></div>
+          <div class="title" style="color:${Number(h.amount) < 0 ? '#f87171' : '#4ade80'}">${Number(h.amount) > 0 ? '+' : ''}${fmt(h.amount)}</div></div>`).join('') || '<div id="empty">Brak operacji.</div>'}
+      </div>
+      ${curRank === 'SZEF' ? `<div class="meta" style="text-align:center">Szef może wypłacić także sobie (ten sam formularz, własny numer).</div>` : ''}`;
+  } catch (err) { body.innerHTML = errBox(err); }
+}
+async function transferTreasury() {
+  const msg = document.getElementById('tr-msg'); msg.textContent = ''; msg.className = 'msg';
+  const amount = Number(document.getElementById('tr-amount').value);
+  const phone = document.getElementById('tr-phone').value.trim();
+  if (!confirm(`Wypłacić ${fmt(amount)} na konto pracownika ${phone}?`)) return;
+  try {
+    const r = await api(`/customer/factions/${curFaction}/transfer`, 'POST', { to_phone_number: phone, amount, title: document.getElementById('tr-title').value });
+    await loadTreasury();
+    const m2 = document.getElementById('tr-msg'); if (m2) { m2.textContent = `Wypłacono pracownikowi ${r.to}.`; m2.className = 'msg ok'; }
+  } catch (err) { msg.textContent = err.message; msg.className = 'msg error'; }
+}
+async function payoutTreasury() {
+  const msg = document.getElementById('po-msg');
+  msg.textContent = ''; msg.className = 'msg';
+  try {
+    await api(`/customer/factions/${curFaction}/payout`, 'POST', { amount: Number(document.getElementById('po-amount').value) });
+    msg.textContent = 'Wypłacono na twoje konto.'; msg.className = 'msg ok';
+    loadTreasury();
+  } catch (err) { msg.textContent = err.message; msg.className = 'msg error'; }
+}
+
+
+// ====== PANEL OPERACYJNY EMS / DOT (służba, zgłoszenia, kartoteka, ludzie, dziennik) ======
+const OPS = () => `/customer/factions/${curFaction}/ops`;
+const T_STATUS = { NOWE: ['nowe', 'warn'], PRZYJETE: ['przyjęte', ''], W_TRAKCIE: ['w trakcie', ''], ZAKONCZONE: ['zakończone', 'ok'], ANULOWANE: ['anulowane', 'off'] };
+const AUDIT_LABEL = { DUTY_ON: 'wszedł na służbę', DUTY_OFF: 'zszedł ze służby', ZMIANA_RANGI: 'zmiana rangi', KARTOTEKA_ODCZYT: 'otworzył kartotekę', KARTOTEKA_DODANO: 'dodał wpis w kartotece', KARTOTEKA_EDYCJA: 'poprawił wpis w kartotece', WYPLATA: 'wypłata ze skarbca' };
+const fdt = (d) => new Date(d).toLocaleString('pl-PL', { dateStyle: 'short', timeStyle: 'short' });
+const fbody = () => document.getElementById('fac-body');
+const errBox = (err) => `<div class="panel"><div id="empty">${escapeHtml(err.message || String(err))}</div></div>`;
+const loadingBox = () => '<div class="panel"><div id="empty">Ładowanie…</div></div>';
+const who = (a, b) => (a || b) ? `${escapeHtml(a || '')} ${escapeHtml(b || '')}` : '—';
+
+async function opsDashboard() {
+  const body = fbody(); body.innerHTML = loadingBox();
+  try {
+    const d = await api(OPS() + '/dashboard');
+    const c = d.counts;
+    body.innerHTML = `
+      <div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div><div class="title">Twoja służba: ${d.on_duty ? '<span class="pill ok">na służbie</span>' : '<span class="pill off">poza służbą</span>'}</div>
+          <div class="meta">Na służbie: ${d.duty.length} os.</div></div>
+        <button class="btn small ${d.on_duty ? 'secondary' : ''}" style="width:auto" onclick="opsDuty(${!d.on_duty})">${d.on_duty ? 'Zejdź ze służby' : 'Wejdź na służbę'}</button>
+      </div>
+      <div id="duty-msg" class="msg"></div>
+      <div class="kpi">
+        <div><b>${c.nowe}</b><span>Nowe</span></div>
+        <div><b>${c.przyjete + c.w_trakcie}</b><span>W realizacji</span></div>
+        <div><b>${c.zakonczone_24h}</b><span>Zakończone 24h</span></div>
+        <div><b>${d.duty.length}</b><span>Dostępni</span></div></div>
+      <div class="panel"><div class="meta" style="margin-bottom:6px">Aktywne zgłoszenia</div>
+        ${d.active.map(t => `<div class="tx-row" style="cursor:pointer" onclick="opsTicket(${t.ticket_id})"><div>
+          <div class="title">#${t.ticket_id} ${escapeHtml(t.kind)}<span class="pill ${T_STATUS[t.status][1]}">${T_STATUS[t.status][0]}</span></div>
+          <div class="meta">${escapeHtml(t.location)} · ${t.a_first ? who(t.a_first, t.a_last) : 'nieprzypisane'}</div></div></div>`).join('') || '<div id="empty">Brak aktywnych zgłoszeń.</div>'}
+      </div>
+      <div class="panel"><div class="meta" style="margin-bottom:6px">Na służbie</div>
+        ${d.duty.map(p => `<div class="tx-row"><div class="title">${who(p.first_name, p.last_name)}<span class="pill">${RANK_LABEL[p.rank] || p.rank}</span></div><div class="meta">od ${fdt(p.since)}</div></div>`).join('') || '<div id="empty">Nikt nie jest na służbie.</div>'}
+      </div>
+      <div class="panel"><div class="meta" style="margin-bottom:6px">Ostatnie działania</div>
+        ${d.recent.map(a => `<div class="tx-row"><div class="meta">${fdt(a.at)} · ${who(a.first_name, a.last_name)} ${escapeHtml(AUDIT_LABEL[a.action] || a.action)}</div></div>`).join('') || '<div id="empty">Brak wpisów.</div>'}
+      </div>`;
+  } catch (err) { body.innerHTML = errBox(err); }
+}
+async function opsDuty(on) {
+  try { await api(OPS() + '/duty', 'POST', { on }); } catch (err) { const m = document.getElementById('duty-msg'); if (m) { m.textContent = err.message; m.className = 'msg error'; } return; }
+  opsDashboard();
+}
+
+// --- zgłoszenia ---
+let tkFilter = 'open';
+async function opsTickets() {
+  const body = fbody(); body.innerHTML = loadingBox();
+  try {
+    const q = tkFilter === 'mine' ? '?status=open&mine=1' : tkFilter === 'open' ? '?status=open' : tkFilter === 'closed' ? '?status=ZAKONCZONE' : '';
+    const list = await api(OPS() + '/tickets' + q);
+    const filt = [['open', 'Aktywne'], ['mine', 'Moje'], ['closed', 'Zakończone'], ['all', 'Wszystkie']];
+    body.innerHTML = `
+      <div class="ftabs">${filt.map(([k, l]) => `<button class="${tkFilter === k ? 'active' : ''}" onclick="tkFilter='${k}';opsTickets()">${l}</button>`).join('')}
+        <button onclick="opsNewTicket()" style="margin-left:auto">＋ Nowe</button></div>
+      <div class="panel">${list.map(t => `<div class="tx-row" style="cursor:pointer" onclick="opsTicket(${t.ticket_id})"><div>
+          <div class="title">#${t.ticket_id} ${escapeHtml(t.kind)}<span class="pill ${T_STATUS[t.status][1]}">${T_STATUS[t.status][0]}</span></div>
+          <div class="meta">${escapeHtml(t.location)}${t.plate ? ' · ' + escapeHtml(t.plate) : ''} · ${t.a_first ? who(t.a_first, t.a_last) : 'nieprzypisane'} · ${fdt(t.created_at)}</div></div></div>`).join('') || '<div id="empty">Brak zgłoszeń.</div>'}
+      </div>`;
+  } catch (err) { body.innerHTML = errBox(err); }
+}
+
+async function opsNewTicket() {
+  const body = fbody();
+  let kinds = [];
+  try { kinds = (await api(OPS() + '/dashboard')).kinds; } catch (err) { body.innerHTML = errBox(err); return; }
+  body.innerHTML = `<div class="panel">
+    <div class="field"><label>Rodzaj</label><select id="nt-kind">${kinds.map(k => `<option>${escapeHtml(k)}</option>`).join('')}</select></div>
+    <div class="field"><label>Miejsce zdarzenia</label><input id="nt-loc" type="text" maxlength="120" placeholder="np. Vinewood Blvd"></div>
+    ${curFaction === 'DOT' ? '<div class="field"><label>Tablica pojazdu (opcjonalnie)</label><input id="nt-plate" type="text" maxlength="16"></div>' : ''}
+    <div class="field"><label>Opis</label><input id="nt-desc" type="text" maxlength="500"></div>
+    <button class="btn" onclick="opsCreateTicket()">Utwórz zgłoszenie</button>
+    <button class="btn secondary" style="margin-top:8px" onclick="opsTickets()">Wróć</button>
+    <div id="nt-msg" class="msg"></div></div>`;
+}
+async function opsCreateTicket() {
+  const msg = document.getElementById('nt-msg'); msg.textContent = ''; msg.className = 'msg';
+  try {
+    await api(OPS() + '/tickets', 'POST', {
+      kind: document.getElementById('nt-kind').value, location: document.getElementById('nt-loc').value,
+      description: document.getElementById('nt-desc').value, plate: document.getElementById('nt-plate')?.value });
+    tkFilter = 'open'; opsTickets();
+  } catch (err) { msg.textContent = err.message; msg.className = 'msg error'; }
+}
+
+async function opsTicket(id) {
+  const body = fbody(); body.innerHTML = loadingBox();
+  try {
+    const [det, dash] = await Promise.all([api(OPS() + '/tickets/' + id), api(OPS() + '/dashboard')]);
+    const t = det.ticket, open = ['NOWE', 'PRZYJETE', 'W_TRAKCIE'].includes(t.status);
+    const lead = RANK_IDX[curRank] >= 1, mine = t.assigned_to === dash.me;
+    const canWork = open && (mine || lead);
+    const btns = [];
+    if (t.status === 'NOWE') btns.push(`<button class="btn small" style="width:auto" onclick="opsAct(${id},'take')">Przyjmij</button>`);
+    if (t.status === 'PRZYJETE' && canWork) btns.push(`<button class="btn small" style="width:auto" onclick="opsAct(${id},'start')">Rozpocznij</button>`);
+    if ((t.status === 'PRZYJETE' || t.status === 'W_TRAKCIE') && canWork) btns.push(`<button class="btn small" style="width:auto" onclick="opsCloseForm(${id})">Zakończ</button>`);
+    if (open && (lead || t.created_by === dash.me)) btns.push(`<button class="btn small secondary" style="width:auto" onclick="opsCancel(${id})">Anuluj</button>`);
+    let assign = '';
+    if (open && lead) {
+      const ppl = (await api(OPS() + '/people')).people;
+      assign = `<div class="field"><label>Przypisz do</label><select id="as-sel">${ppl.map(p => `<option value="${p.customer_id}" ${p.customer_id === t.assigned_to ? 'selected' : ''}>${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}${p.on_duty ? ' (na służbie)' : ''}</option>`).join('')}</select></div>
+        <button class="btn small secondary" style="width:auto" onclick="opsAssign(${id})">Przypisz</button>`;
+    }
+    const dot = curFaction === 'DOT';
+    body.innerHTML = `
+      <button class="btn small secondary" style="width:auto;margin-bottom:8px" onclick="opsTickets()">← Lista</button>
+      <div class="panel"><div class="title">#${t.ticket_id} ${escapeHtml(t.kind)}<span class="pill ${T_STATUS[t.status][1]}">${T_STATUS[t.status][0]}</span></div>
+        <div class="meta">Miejsce: ${escapeHtml(t.location)}</div>
+        <div style="margin:6px 0">${escapeHtml(t.description)}</div>
+        <div class="meta">Zgłosił: ${t.cl_first ? who(t.cl_first, t.cl_last) + ' (obywatel' + (t.cl_phone ? ', ' + escapeHtml(t.cl_phone) : '') + ')' : who(t.cr_first, t.cr_last)} · ${fdt(t.created_at)}</div>
+        <div class="meta">Realizuje: ${t.a_first ? who(t.a_first, t.a_last) : 'nikt'}</div>
+        ${dot ? `<div class="meta">Pojazd: ${escapeHtml(t.plate || '—')} ${t.vehicle_note ? '(' + escapeHtml(t.vehicle_note) + ')' : ''} · Odholowano do: ${escapeHtml(t.tow_destination || '—')}</div>` : ''}
+        ${t.actions_done ? `<div class="meta">Wykonane czynności: ${escapeHtml(t.actions_done)}</div>` : ''}
+        ${t.result ? `<div class="meta">Wynik: ${escapeHtml(t.result)}</div>` : ''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">${btns.join('')}</div>
+        <div id="tk-msg" class="msg"></div><div id="tk-form"></div></div>
+      ${open && (mine || lead) ? `<div class="panel"><div class="meta" style="margin-bottom:6px">Szczegóły interwencji</div>
+        ${dot ? `<div class="field"><label>Tablica</label><input id="td-plate" type="text" maxlength="16" value="${escapeAttr(t.plate || '')}"></div>
+        <div class="field"><label>Opis pojazdu</label><input id="td-veh" type="text" maxlength="200" value="${escapeAttr(t.vehicle_note || '')}"></div>
+        <div class="field"><label>Miejsce odholowania / przekazania</label><input id="td-dest" type="text" maxlength="120" value="${escapeAttr(t.tow_destination || '')}"></div>` : ''}
+        <div class="field"><label>Wykonane czynności</label><input id="td-act" type="text" maxlength="500" value="${escapeAttr(t.actions_done || '')}"></div>
+        <button class="btn small" style="width:auto" onclick="opsSaveDetails(${id})">Zapisz szczegóły</button>${assign ? '<hr style="border:0;border-top:1px solid rgba(217,176,92,.15);margin:12px 0">' + assign : ''}</div>` : ''}
+      <div class="panel"><div class="meta" style="margin-bottom:6px">Historia</div>
+        ${det.log.map(l => `<div class="tx-row"><div class="meta">${fdt(l.at)} · ${escapeHtml(l.action)} · ${who(l.first_name, l.last_name)}${l.note ? ' — ' + escapeHtml(l.note) : ''}</div></div>`).join('')}</div>`;
+  } catch (err) { body.innerHTML = errBox(err); }
+}
+async function opsAct(id, action, extra) {
+  try { await api(OPS() + `/tickets/${id}/action`, 'POST', { action, ...(extra || {}) }); }
+  catch (err) { const m = document.getElementById('tk-msg'); if (m) { m.textContent = err.message; m.className = 'msg error'; } return false; }
+  opsTicket(id); return true;
+}
+function opsCloseForm(id) {
+  document.getElementById('tk-form').innerHTML = `<div class="field" style="margin-top:10px"><label>Wynik interwencji</label><input id="cl-res" type="text" maxlength="500" placeholder="np. Pacjent przewieziony do szpitala"></div>
+    <button class="btn small" style="width:auto" onclick="opsAct(${id},'close',{result:document.getElementById('cl-res').value})">Zakończ zgłoszenie</button>`;
+}
+function opsCancel(id) { if (confirm('Anulować to zgłoszenie?')) opsAct(id, 'cancel'); }
+function opsAssign(id) { opsAct(id, 'assign', { assignee_id: Number(document.getElementById('as-sel').value) }); }
+async function opsSaveDetails(id) {
+  const g = (i) => document.getElementById(i);
+  const b = { actions_done: g('td-act').value };
+  if (g('td-plate')) { b.plate = g('td-plate').value; b.vehicle_note = g('td-veh').value; b.tow_destination = g('td-dest').value; }
+  const m = g('tk-msg');
+  try { await api(OPS() + `/tickets/${id}/details`, 'POST', b); opsTicket(id); }
+  catch (err) { m.textContent = err.message; m.className = 'msg error'; }
+}
+
+// --- kartoteka medyczna (EMS) ---
+async function opsRecords(phone) {
+  const body = fbody();
+  body.innerHTML = `<div class="panel"><div class="field"><label>Numer telefonu pacjenta</label><input id="mr-phone" type="text" placeholder="555-0000" value="${escapeAttr(phone || '')}"></div>
+    <button class="btn" onclick="opsRecordsLoad()">Otwórz kartotekę</button><div id="mr-msg" class="msg"></div></div><div id="mr-out"></div>`;
+  if (phone) opsRecordsLoad();
+}
+async function opsRecordsLoad() {
+  const phone = document.getElementById('mr-phone').value.trim(), msg = document.getElementById('mr-msg'), out = document.getElementById('mr-out');
+  msg.textContent = ''; msg.className = 'msg';
+  try {
+    const [r, dash] = await Promise.all([api(OPS() + '/records?phone=' + encodeURIComponent(phone)), api(OPS() + '/dashboard')]);
+    out.innerHTML = `<div class="panel"><div class="title">${escapeHtml(r.patient.first_name)} ${escapeHtml(r.patient.last_name)}</div><div class="meta">${escapeHtml(r.patient.phone_number)}</div></div>
+      <div class="panel"><div class="field"><label>Nowy wpis</label><input id="mr-content" type="text" maxlength="1500" placeholder="Rozpoznanie, leczenie, zalecenia"></div>
+        <div class="field"><label>Nr zgłoszenia (opcjonalnie)</label><input id="mr-ticket" type="number" min="1"></div>
+        <button class="btn small" style="width:auto" onclick="opsRecordAdd('${escapeAttr(r.patient.phone_number)}')">Dodaj wpis</button><div id="mr-msg2" class="msg"></div></div>
+      <div class="panel">${r.records.map(x => `<div class="tx-row" style="display:block"><div class="meta">${fdt(x.created_at)} · ${who(x.first_name, x.last_name)}${x.ticket_id ? ' · zgł. #' + x.ticket_id : ''}${x.updated_at ? ' · poprawiono' : ''}</div>
+          <div id="mr-txt-${x.record_id}" style="margin:4px 0">${escapeHtml(x.content)}</div>
+          ${(x.author_customer_id === dash.me || RANK_IDX[curRank] >= 1) ? `<button class="btn small secondary" style="width:auto" onclick="opsRecordEdit(${x.record_id},'${escapeAttr(r.patient.phone_number)}')">Popraw</button>` : ''}</div>`).join('') || '<div id="empty">Brak wpisów w kartotece.</div>'}</div>`;
+  } catch (err) { out.innerHTML = ''; msg.textContent = err.message; msg.className = 'msg error'; }
+}
+async function opsRecordAdd(phone) {
+  const m = document.getElementById('mr-msg2');
+  try {
+    await api(OPS() + '/records', 'POST', { phone, content: document.getElementById('mr-content').value, ticket_id: document.getElementById('mr-ticket').value ? Number(document.getElementById('mr-ticket').value) : undefined });
+    opsRecords(phone);
+  } catch (err) { m.textContent = err.message; m.className = 'msg error'; }
+}
+function opsRecordEdit(rid, phone) {
+  const el = document.getElementById('mr-txt-' + rid);
+  el.innerHTML = `<input id="mr-edit-${rid}" type="text" maxlength="1500" style="width:100%" value="${escapeAttr(el.textContent)}">
+    <button class="btn small" style="width:auto;margin-top:6px" onclick="opsRecordSave(${rid},'${escapeAttr(phone)}')">Zapisz</button>`;
+}
+async function opsRecordSave(rid, phone) {
+  try { await api(OPS() + `/records/${rid}/edit`, 'POST', { content: document.getElementById('mr-edit-' + rid).value }); opsRecords(phone); }
+  catch (err) { alert(err.message); }
+}
+
+// --- ludzie / rangi ---
+async function opsPeople() {
+  const body = fbody(); body.innerHTML = loadingBox();
+  try {
+    const r = await api(OPS() + '/people');
+    const boss = curRank === 'SZEF';
+    body.innerHTML = '<div class="panel">' + r.people.map(p => `<div class="tx-row"><div>
+        <div class="title">${who(p.first_name, p.last_name)}<span class="pill ${p.rank === 'SZEF' ? 'ok' : ''}">${RANK_LABEL[p.rank] || p.rank}</span>${p.on_duty ? '<span class="pill ok">na służbie</span>' : ''}</div>
+        <div class="meta">${p.phone_number ? escapeHtml(p.phone_number) + ' · ' : ''}służba 7 dni: ${Math.floor(Number(p.duty_sec_7d) / 3600)} h ${Math.floor(Number(p.duty_sec_7d) % 3600 / 60)} min</div></div>
+        ${boss && p.rank !== 'SZEF' && p.customer_id !== r.me ? `<button class="btn small secondary" style="width:auto" onclick="opsSetRank(${p.customer_id},'${p.rank === 'ZASTEPCA' ? 'PRACOWNIK' : 'ZASTEPCA'}')">${p.rank === 'ZASTEPCA' ? 'Degraduj' : 'Awansuj'}</button>` : ''}
+      </div>`).join('') + '</div><div class="meta" style="text-align:center">Rangę szefa nadaje administracja (rola na Discordzie).</div>';
+  } catch (err) { body.innerHTML = errBox(err); }
+}
+async function opsSetRank(cid, rank) {
+  if (!confirm(rank === 'ZASTEPCA' ? 'Awansować na zastępcę?' : 'Zdegradować do pracownika?')) return;
+  try { await api(OPS() + `/people/${cid}/rank`, 'POST', { rank }); } catch (err) { alert(err.message); }
+  opsPeople();
+}
+
+// --- dziennik ---
+async function opsAudit() {
+  const body = fbody(); body.innerHTML = loadingBox();
+  try {
+    const list = await api(OPS() + '/audit');
+    body.innerHTML = '<div class="panel">' + list.map(a => `<div class="tx-row" style="display:block"><div class="meta">${fdt(a.at)} · ${who(a.first_name, a.last_name)} — ${escapeHtml(AUDIT_LABEL[a.action] || a.action)}${a.detail ? ' (' + escapeHtml(a.detail) + ')' : ''}</div></div>`).join('') + '</div>';
+  } catch (err) { body.innerHTML = errBox(err); }
+}
+
+// ====== KONTAKTY ======
+async function showContacts() {
+  showScreen('screen-contacts', { isMain: true });
+  const contacts = await api('/customer/contacts');
+  document.getElementById('contacts-list').innerHTML = contacts.map(c => `
+    <div class="tx-row">
+      <div><div class="title">${escapeHtml(c.label)}${c.system ? '<span class="pill ok">służby</span>' : ''}</div><div class="meta">${escapeHtml(c.phone_number)}</div></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn" style="width:auto;padding:6px 12px" data-label="${escapeAttr(c.label)}" onclick="openMsgThread(${c.contact_customer_id}, this.dataset.label)">💬</button>
+        <button class="btn" style="width:auto;padding:6px 12px" data-label="${escapeAttr(c.label)}" data-phone="${escapeAttr(c.phone_number)}" onclick="callNumber(this.dataset.phone, this.dataset.label)">📞</button>
+      </div>
+    </div>`).join('') || '<div id="empty">Brak kontaktów.</div>';
+}
+async function addContact() {
+  const phone = document.getElementById('c-phone').value.trim();
+  const label = document.getElementById('c-label').value.trim();
+  const msg = document.getElementById('contact-msg');
+  msg.textContent=''; msg.className='msg';
+  try {
+    await api('/customer/contacts', 'POST', { phone_number: phone, label });
+    document.getElementById('c-phone').value=''; document.getElementById('c-label').value='';
+    msg.textContent = 'Dodano!'; msg.className = 'msg ok';
+    showContacts();
+  } catch (err) { msg.textContent = err.message; msg.className = 'msg error'; }
+}
+
+// ====== SKLEP / DARKWEB ======
+// ====== SKLEP / DARKWEB ======
+function flash(id, text, ok) { const m = document.getElementById(id); if (!m) return; m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'error'); clearTimeout(flash['t' + id]); flash['t' + id] = setTimeout(() => { m.textContent = ''; }, 3500); }
+const curFmt = (n, cur) => cur === 'AVC' ? `${Number(n).toLocaleString('pl-PL')} AVC` : fmt(n);
+
+function renderCatalog(cat, category, cur) {
+  const groups = {};
+  cat.items.forEach(i => { (groups[i.group || 'Inne'] = groups[i.group || 'Inne'] || []).push(i); });
+  return Object.entries(groups).map(([g, items]) => `
+    <div style="margin:14px 0 6px;color:var(--muted);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase">${escapeHtml(g)}</div>
+    ${items.map(i => `
+    <div class="panel" style="padding:12px 14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div style="min-width:0">
+          <div style="color:var(--cream);font-weight:600;font-size:.9rem">${escapeHtml(i.name)}${i.unit ? `<span class="pill">${escapeHtml(i.unit)}</span>` : ''}${i.instant ? '<span class="pill ok">losowanie od razu</span>' : ''}</div>
+          <div style="color:var(--muted);font-size:.76rem;margin:3px 0">${escapeHtml(i.desc || '')}</div>
+          <div style="color:var(--gold-lt);font-weight:600">${curFmt(i.price, cur)}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:stretch">
+          ${(!i.once && !i.instant) ? `<select id="qty-${category}-${i.id}" style="background:#0b1026;color:var(--cream);border:1px solid rgba(217,176,92,.3);border-radius:6px;padding:4px">${[1,2,3,4,5].map(n => `<option>${n}</option>`).join('')}</select>` : ''}
+          <button class="btn small" onclick="buyItem('${category}','${i.id}', this)">${i.instant ? 'Zdrap' : 'Kup'}</button>
+        </div>
+      </div>
+    </div>`).join('')}`).join('');
+}
+
+async function showShop() {
+  showScreen('screen-shop', { isMain: true });
+  document.getElementById('shop-items').innerHTML = '<div id="empty">Ładowanie…</div>';
+  try {
+    const cat = await api('/customer/shop/catalog?category=sklep');
+    document.getElementById('shop-items').innerHTML = renderCatalog(cat, 'sklep', cat.currency);
+  } catch (e) { document.getElementById('shop-items').innerHTML = `<div id="empty">${escapeHtml(e.message)}</div>`; }
+  loadOrders('shop-orders');
+}
+async function loadOrders(targetId) {
+  try {
+    const o = await api('/customer/shop/orders');
+    document.getElementById(targetId).innerHTML = o.length ? `
+      <div style="margin:18px 0 6px;color:var(--muted);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase">Moje zamówienia</div>
+      ${o.map(x => `<div class="panel" style="padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;font-size:.8rem">
+        <span>${escapeHtml(x.item_name)}</span><span style="color:var(--muted);white-space:nowrap">${curFmt(x.price, x.currency)} · ${x.status === 'ZREALIZOWANE' ? '<span style="color:var(--green)">dostarczone ✓</span>' : 'w drodze…'}</span></div>`).join('')}` : '';
+    if (o.some(x => x.status !== 'ZREALIZOWANE')) { clearTimeout(window._ordersT); window._ordersT = setTimeout(() => { const el = document.getElementById(targetId); if (el && el.offsetParent !== null) loadOrders(targetId); }, 20000); }
+  } catch { }
+}
+async function buyItem(category, itemId, btn) {
+  const msgId = category === 'darkweb' ? 'dw-msg' : 'shop-msg';
+  const qEl = document.getElementById(`qty-${category}-${itemId}`);
+  const orig = btn.textContent; btn.disabled = true; btn.textContent = '...';
+  try {
+    const r = await api('/customer/shop/buy', 'POST', { category, item_id: itemId, qty: qEl ? Number(qEl.value) : 1 });
+    if (r.scratch) {
+      flash(msgId, r.prize > 0 ? `🎉 Wygrałeś ${fmt(r.prize)}! Pieniądze są już na koncie.` : '😕 Pusta zdrapka. Spróbuj jeszcze raz.', r.prize > 0);
+    } else flash(msgId, 'Zamówione ✓ Dostawa za ok. 2 minuty, dostaniesz wiadomość.', true);
+    if (category === 'darkweb') { loadCryptoBalance(); loadOrders('dw-orders'); } else loadOrders('shop-orders');
+  } catch (err) { flash(msgId, err.message, false); }
+  btn.disabled = false; btn.textContent = orig;
+}
+
+let dwCurrentTab = 'shop';
+async function showDarkweb() {
+  showScreen('screen-darkweb', { isMain: true });
+  dwTab(dwCurrentTab || 'shop');
+}
+async function loadCryptoBalance() {
+  try { const c = await api('/customer/crypto'); window.cryptoInfo = c; document.getElementById('dw-balance').textContent = `${Number(c.balance).toLocaleString('pl-PL')} AVC`; return c; } catch { return null; }
+}
+async function dwTab(tab) {
+  dwCurrentTab = tab;
+  stopDarkChat();
+  document.querySelectorAll('#dw-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  const body = document.getElementById('dw-body');
+  body.innerHTML = '<div id="empty">Ładowanie…</div>';
+  try {
+    await loadCryptoBalance();
+    if (tab === 'shop') {
+      const cat = await api('/customer/shop/catalog?category=darkweb');
+      body.innerHTML = `<div style="color:var(--muted);font-size:.76rem;margin-bottom:6px">Płatność tylko w krypto (AVC). Kup je w zakładce Krypto.</div>${renderCatalog(cat, 'darkweb', 'AVC')}<div id="dw-orders"></div>`;
+      loadOrders('dw-orders');
+    } else if (tab === 'chat') await renderDarkChat();
+    else if (tab === 'crypto') renderCrypto();
+    else await renderContracts();
+  } catch (e) { body.innerHTML = `<div id="empty">${escapeHtml(e.message)}</div>`; }
+}
+
+// ----- czat (anonimowy) -----
+let dcLastId = 0, dcTimer = null;
+function stopDarkChat() { clearTimeout(dcTimer); dcTimer = null; }
+async function renderDarkChat() {
+  dcLastId = 0;
+  document.getElementById('dw-body').innerHTML = `
+    <div style="color:var(--muted);font-size:.74rem;margin-bottom:8px">Anonimowy czat. Widzą Cię tylko jako: <b id="dc-handle" style="color:var(--gold-lt)"></b>
+      <a href="#" onclick="dcRename();return false" style="margin-left:6px;color:var(--muted)">zmień</a></div>
+    <div id="dc-list" style="height:330px;overflow-y:auto;background:rgba(0,0,0,.25);border:1px solid rgba(217,176,92,.2);border-radius:10px;padding:10px;font-size:.82rem"></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><input id="dc-input" class="fieldtxt" maxlength="300" placeholder="Napisz…" onkeydown="if(event.key==='Enter')dcSend()" style="flex:1">
+      <button class="btn small" onclick="dcSend()">Wyślij</button></div>`;
+  await dcPoll(true);
+}
+function dcRow(m) {
+  const t = new Date(m.created_at).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  return `<div style="margin-bottom:7px"><span style="color:${m.mine ? 'var(--gold-lt)' : '#ef4444'};font-weight:600">${escapeHtml(m.handle)}</span> <span style="color:var(--muted);font-size:.68rem">${t}</span><div style="color:var(--cream);word-break:break-word">${escapeHtml(m.content)}</div></div>`;
+}
+async function dcPoll(first) {
+  stopDarkChat();
+  const list = document.getElementById('dc-list');
+  if (!list || dwCurrentTab !== 'chat' || !document.getElementById('screen-darkweb').classList.contains('active')) return;
+  try {
+    const d = await api('/customer/darkchat' + (dcLastId ? `?after=${dcLastId}` : ''));
+    document.getElementById('dc-handle').textContent = d.handle;
+    if (d.messages.length) {
+      const atBottom = first || list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+      if (first) list.innerHTML = '';
+      list.insertAdjacentHTML('beforeend', d.messages.map(dcRow).join(''));
+      dcLastId = d.messages[d.messages.length - 1].id;
+      if (atBottom) list.scrollTop = list.scrollHeight;
+    } else if (first) list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px 0">Cisza… Napisz pierwszy.</div>';
+  } catch { }
+  dcTimer = setTimeout(() => dcPoll(false), 3000);
+}
+async function dcSend() {
+  const inp = document.getElementById('dc-input'); const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  try { await api('/customer/darkchat', 'POST', { content: text }); dcPoll(false); }
+  catch (e) { inp.value = text; flash('dw-msg', e.message, false); }
+}
+function dcRename() {
+  document.getElementById('dc-handle').parentElement.insertAdjacentHTML('afterend', `<div id="dc-rename" style="display:flex;gap:8px;margin-bottom:8px"><input id="dc-newhandle" class="fieldtxt" maxlength="16" placeholder="Nowy pseudonim" style="flex:1"><button class="btn small" onclick="dcRenameSave()">Zapisz</button></div>`);
+}
+async function dcRenameSave() {
+  try { await api('/customer/darkchat/handle', 'POST', { handle: document.getElementById('dc-newhandle').value }); flash('dw-msg', 'Pseudonim zmieniony.', true); renderDarkChat(); }
+  catch (e) { flash('dw-msg', e.message, false); }
+}
+
+// ----- krypto -----
+function renderCrypto() {
+  const c = window.cryptoInfo || { balance: 0, rate: 10, fee_pct: 5 };
+  document.getElementById('dw-body').innerHTML = `
+    <div class="panel"><h2>Kantor AVC</h2>
+      <div style="color:var(--muted);font-size:.8rem;margin-bottom:12px">Kurs: 1 AVC = ${fmt(c.rate)} · prowizja ${c.fee_pct}% w obie strony. Środki idą z/na Twoje konto bankowe.</div>
+      <div class="field"><label>Ilość AVC</label><input id="cx-amount" type="number" min="1" step="1" value="10" oninput="cryptoPreview()"></div>
+      <div id="cx-preview" style="color:var(--muted);font-size:.8rem;margin-bottom:12px"></div>
+      <div style="display:flex;gap:8px"><button class="btn" onclick="cryptoTrade('buy')">Kup AVC</button><button class="btn secondary" onclick="cryptoTrade('sell')">Sprzedaj AVC</button></div>
+    </div>`;
+  cryptoPreview();
+}
+function cryptoPreview() {
+  const c = window.cryptoInfo || { rate: 10, fee_pct: 5 };
+  const n = parseInt(document.getElementById('cx-amount').value, 10) || 0;
+  const buy = Math.ceil(n * c.rate * (1 + c.fee_pct / 100)), sell = Math.floor(n * c.rate * (1 - c.fee_pct / 100));
+  document.getElementById('cx-preview').innerHTML = n > 0 ? `Kupno: <b>${fmt(buy)}</b> · Sprzedaż: <b>${fmt(sell)}</b>` : '';
+}
+async function cryptoTrade(kind) {
+  const avc = parseInt(document.getElementById('cx-amount').value, 10);
+  try {
+    const r = await api(`/customer/crypto/${kind}`, 'POST', { avc });
+    flash('dw-msg', kind === 'buy' ? `Kupiono ${avc} AVC za ${fmt(r.cost)}.` : `Sprzedano ${avc} AVC, na konto wpłynęło ${fmt(r.payout)}.`, true);
+    loadCryptoBalance();
+  } catch (e) { flash('dw-msg', e.message, false); }
+}
+
+// ----- zlecenia -----
+const CSTATUS = { OPEN: 'czeka na wykonawcę', TAKEN: 'podjęte', CLAIMED: 'zgłoszono wykonanie', COMPLETED: 'wykonane', CANCELLED: 'anulowane' };
+async function renderContracts() {
+  const d = await api('/customer/contracts');
+  const row = (c, buttons) => `<div class="panel" style="padding:12px 14px;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;gap:8px"><b style="font-size:.88rem">Cel: ${escapeHtml(c.target_name)}</b><span style="color:var(--gold-lt);white-space:nowrap">${c.reward} AVC</span></div>
+    <div style="color:var(--muted);font-size:.78rem;margin:4px 0 8px">${escapeHtml(c.description)}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="pill">#${c.contract_id} · ${CSTATUS[c.status] || c.status}</span><span style="display:flex;gap:6px">${buttons}</span></div></div>`;
+  const btn = (label, id, act, secondary) => `<button class="btn small ${secondary ? 'secondary' : ''}" onclick="contractAct(${id},'${act}')">${label}</button>`;
+  const active = d.taken.length ? d.taken.map(c => row(c, c.status === 'TAKEN' ? btn('Zgłoś wykonanie', c.contract_id, 'claim') + btn('Porzuć', c.contract_id, 'abandon', true) : btn('Porzuć', c.contract_id, 'abandon', true))).join('') : '<div id="empty" style="padding:8px 0">Nie masz podjętych zleceń.</div>';
+  const open = d.open.length ? d.open.map(c => row(c, btn('Podejmij', c.contract_id, 'take'))).join('') : '<div id="empty" style="padding:8px 0">Brak dostępnych zleceń.</div>';
+  const mine = d.mine.length ? d.mine.map(c => row(c,
+    c.status === 'OPEN' ? btn('Anuluj (zwrot)', c.contract_id, 'cancel', true) :
+    c.status === 'CLAIMED' ? btn('Potwierdź', c.contract_id, 'confirm') + btn('Odrzuć', c.contract_id, 'reject', true) : '')).join('') : '<div id="empty" style="padding:8px 0">Nie wystawiłeś zleceń.</div>';
+  const h = (t) => `<div style="margin:16px 0 6px;color:var(--muted);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase">${t}</div>`;
+  document.getElementById('dw-body').innerHTML = `
+    <div class="panel"><h2>Wystaw zlecenie</h2>
+      <div class="field"><label>Cel (imię i nazwisko postaci)</label><input id="ct-target" maxlength="80"></div>
+      <div class="field"><label>Co ma być zrobione</label><textarea id="ct-desc" class="fieldtxt" rows="3" maxlength="300"></textarea></div>
+      <div class="field"><label>Nagroda (AVC, min. ${d.min_reward}) - zostaje zablokowana do wykonania</label><input id="ct-reward" type="number" min="${d.min_reward}" value="${d.min_reward}"></div>
+      <button class="btn" onclick="createContract()">Wystaw zlecenie</button>
+    </div>
+    ${h('Dostępne zlecenia')}${open}${h('Moje podjęte')}${active}${h('Moje zlecenia')}${mine}`;
+}
+async function createContract() {
+  try {
+    await api('/customer/contracts', 'POST', { target_name: document.getElementById('ct-target').value, description: document.getElementById('ct-desc').value, reward: Number(document.getElementById('ct-reward').value) });
+    flash('dw-msg', 'Zlecenie wystawione. Nagroda zablokowana.', true);
+    await renderContracts(); loadCryptoBalance();
+  } catch (e) { flash('dw-msg', e.message, false); }
+}
+async function contractAct(id, act) {
+  try {
+    await api(`/customer/contracts/${id}/${act}`, 'POST');
+    const texts = { take: 'Podjąłeś zlecenie.', abandon: 'Zlecenie wróciło na listę.', claim: 'Zgłoszono wykonanie. Czekaj na potwierdzenie.', confirm: 'Potwierdzone, nagroda wypłacona wykonawcy.', reject: 'Zgłoszenie odrzucone.', cancel: 'Anulowane, nagroda wróciła do Ciebie.' };
+    flash('dw-msg', texts[act] || 'OK', true);
+    await renderContracts(); loadCryptoBalance();
+  } catch (e) { flash('dw-msg', e.message, false); }
+}
+
+// ====== PLECAK ======
+async function showInventory() {
+  showScreen('screen-inventory', { isMain: true });
+  const body = document.getElementById('inv-body');
+  body.innerHTML = '<div id="empty">Ładowanie…</div>';
+  try {
+    const items = await api('/customer/inventory');
+    let st = null; try { st = await api('/customer/backpack/status'); } catch {}
+    const listHtml = items.length ? items.map(i => `
+      <div class="panel" style="padding:12px 14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div><b style="font-size:.9rem">${escapeHtml(i.item_name)}</b>${i.bound ? '<span class="pill">dokument</span>' : ''}<div style="color:var(--muted);font-size:.78rem;margin-top:2px">Ilość: <b style="color:var(--gold-lt)">${i.qty}</b>${i.unit ? ' (' + escapeHtml(i.unit) + ')' : ''}</div></div>
+          <div style="display:flex;gap:6px">
+            ${i.consumable ? `<button class="btn small secondary" onclick="invUse('${i.item_id}')">Zużyj</button>` : ''}
+            ${i.bound ? '' : `<button class="btn small" onclick="invGive('${i.item_id}', ${i.qty})">Przekaż</button>`}
+          </div>
+        </div>
+      </div>`).join('') : '<div id="empty">Plecak jest pusty. Zamówione rzeczy pojawią się tu po dostawie (ok. 2 min).</div>';
+    body.innerHTML = bpBanner(st) + listHtml + bpHistory(st);
+  } catch (e) { body.innerHTML = `<div id="empty">${escapeHtml(e.message)}</div>`; }
+}
+async function invUse(id) {
+  try { await api('/customer/inventory/use', 'POST', { item_id: id, qty: 1 }); flash('inv-msg', 'Zużyto 1 szt.', true); showInventory(); }
+  catch (e) { flash('inv-msg', e.message, false); }
+}
+function invGive(id, max) {
+  // w Electronie nie działa prompt(), więc formularz jest wbudowany w ekran
+  document.getElementById('inv-msg').textContent = '';
+  document.getElementById('inv-body').insertAdjacentHTML('afterbegin', `
+    <div class="panel" id="inv-give"><h2>Przekaż przedmiot</h2>
+      <div class="field"><label>Numer telefonu gracza</label><input id="ig-phone" placeholder="555-1234"></div>
+      ${max > 1 ? `<div class="field"><label>Ilość (1-${max})</label><input id="ig-qty" type="number" min="1" max="${max}" value="1"></div>` : ''}
+      <div style="display:flex;gap:8px"><button class="btn" onclick="invGiveSend('${id}', ${max})">Przekaż</button><button class="btn secondary" onclick="showInventory()">Anuluj</button></div></div>`);
+}
+async function invGiveSend(id, max) {
+  const phone = document.getElementById('ig-phone').value.trim();
+  const q = document.getElementById('ig-qty');
+  const qty = q ? Math.max(1, Math.min(max, parseInt(q.value, 10) || 1)) : 1;
+  if (!phone) { flash('inv-msg', 'Podaj numer telefonu.', false); return; }
+  try { await api('/customer/inventory/transfer', 'POST', { item_id: id, qty, to_phone_number: phone }); flash('inv-msg', 'Przekazano.', true); showInventory(); }
+  catch (e) { flash('inv-msg', e.message, false); }
+}
+
+// ====== USTAWIENIA ======
+function settingsSaved(text) {
+  const m = document.getElementById('settings-msg'); if (!m) return;
+  m.textContent = text; m.className = 'msg ok';
+  clearTimeout(settingsSaved.t); settingsSaved.t = setTimeout(() => { m.textContent = ''; }, 1800);
+}
+async function showSettings() {
+  showScreen('screen-settings', { isMain: true });
+  // numer i właściciel telefonu (z konta, nic nie jest generowane na nowo)
+  document.getElementById('settings-number').textContent = window.myPhoneNumber || 'Numer jeszcze nie został przypisany';
+  document.getElementById('settings-owner').textContent = window.myPhoneName || '';
+  initSizeSetting();
+  const wp = document.getElementById('wallpaper-select');
+  const savedWp = localStorage.getItem('afb_wallpaper') || 'default';
+  wp.innerHTML = Object.entries(WALLPAPERS).map(([k, v]) => `<option value="${k}" ${k === savedWp ? 'selected' : ''}>${v[0]}</option>`).join('');
+  wp.onchange = () => { try { localStorage.setItem('afb_wallpaper', wp.value); } catch {} applyWallpaper(wp.value); settingsSaved('Tapeta zapisana ✓'); };
+  try { const s = await navigator.mediaDevices.getUserMedia({ audio: true }); s.getTracks().forEach(t => t.stop()); } catch {}
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const mics = devices.filter(d => d.kind === 'audioinput');
+  const speakers = devices.filter(d => d.kind === 'audiooutput');
+
+  const micSelect = document.getElementById('mic-select');
+  const savedMic = localStorage.getItem('afb_mic') || '';
+  micSelect.innerHTML = mics.map(d => `<option value="${d.deviceId}" ${d.deviceId===savedMic?'selected':''}>${d.label || 'Mikrofon'}</option>`).join('') || '<option>Brak urządzeń</option>';
+  micSelect.onchange = () => { localStorage.setItem('afb_mic', micSelect.value); settingsSaved('Mikrofon zapisany ✓'); };
+
+  const speakerSelect = document.getElementById('speaker-select');
+  const savedSpeaker = localStorage.getItem('afb_speaker') || '';
+  speakerSelect.innerHTML = speakers.map(d => `<option value="${d.deviceId}" ${d.deviceId===savedSpeaker?'selected':''}>${d.label || 'Głośnik'}</option>`).join('') || '<option>Niewspierane w tej przeglądarce</option>';
+  speakerSelect.onchange = () => { localStorage.setItem('afb_speaker', speakerSelect.value); applySpeaker(); settingsSaved('Głośnik zapisany ✓'); };
+
+  const brightness = document.getElementById('brightness-slider');
+  brightness.value = localStorage.getItem('afb_brightness') || 100;
+  applyBrightness(brightness.value);
+  const rv = document.getElementById('ring-volume');
+  rv.value = localStorage.getItem('afb_ring_volume') || 70;
+  rv.oninput = () => localStorage.setItem('afb_ring_volume', rv.value);
+  rv.onchange = () => { settingsSaved('Głośność dzwonka zapisana ✓'); startRing('ring') || setTimeout(stopRing, 1500); }; // krótki podgląd dzwonka
+  brightness.oninput = () => { localStorage.setItem('afb_brightness', brightness.value); applyBrightness(brightness.value); };
+}
+function applyBrightness(value) {
+  document.getElementById('brightness-overlay').style.opacity = (100 - value) / 100 * 0.75;
+}
+function applySpeaker() {
+  const audioEl = document.getElementById('remote-audio');
+  const speakerId = localStorage.getItem('afb_speaker');
+  if (speakerId && audioEl.setSinkId) audioEl.setSinkId(speakerId).catch(() => {});
+}
+applyBrightness(localStorage.getItem('afb_brightness') || 100);
+
+// ====== TAPETA ======
+const WALLPAPERS = {
+  default: ['Granatowa (domyślna)', null],
+  graphite: ['Grafit', 'linear-gradient(180deg,#0b0d12,#171a22 60%,#0b0d12)'],
+  gold: ['Złota noc', 'radial-gradient(circle at 80% 15%, #5a4318 0%, transparent 50%),linear-gradient(180deg,#07080d,#14110a 60%,#07080d)'],
+  forest: ['Leśna zieleń', 'radial-gradient(circle at 20% 90%, #14442f 0%, transparent 55%),linear-gradient(180deg,#040a07,#0a1a12 60%,#040a07)'],
+  wine: ['Burgund', 'radial-gradient(circle at 75% 10%, #4a1530 0%, transparent 55%),linear-gradient(180deg,#0a0509,#1b0b14 60%,#0a0509)'],
+};
+function applyWallpaper(key) {
+  const w = WALLPAPERS[key] || WALLPAPERS.default;
+  const el = document.querySelector('.phone-screen');
+  if (w[1]) el.style.setProperty('--wallpaper', w[1]); else el.style.removeProperty('--wallpaper');
+}
+try { applyWallpaper(localStorage.getItem('afb_wallpaper') || 'default'); } catch { }
+
+// ====== DZWONEK (WebAudio, bez plików dźwiękowych) ======
+let ringCtx = null, ringNodes = [];
+function ringVolume() { const raw = localStorage.getItem('afb_ring_volume'); const v = raw === null || raw === '' ? 70 : Number(raw); return (Number.isFinite(v) ? v : 70) / 100; }
+function stopRing() {
+  ringNodes.forEach(n => { try { n.stop(); } catch {} try { n.disconnect(); } catch {} });
+  ringNodes = [];
+}
+// kind: 'ring' (przychodzące: podwójny dzwonek co 3 s) | 'back' (dla dzwoniącego: długi sygnał co 4 s)
+function startRing(kind) {
+  stopRing();
+  try {
+    ringCtx = ringCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (ringCtx.state === 'suspended') ringCtx.resume();
+    const vol = ringVolume() * (kind === 'back' ? 0.35 : 0.6);
+    if (vol <= 0) return;
+    const t0 = ringCtx.currentTime + 0.05;
+    const burst = (start, dur, freqs) => {
+      const g = ringCtx.createGain();
+      g.gain.setValueAtTime(0, start);
+      g.gain.linearRampToValueAtTime(vol, start + 0.03);
+      g.gain.setValueAtTime(vol, start + dur - 0.05);
+      g.gain.linearRampToValueAtTime(0, start + dur);
+      g.connect(ringCtx.destination);
+      ringNodes.push(g);
+      freqs.forEach(f => { const o = ringCtx.createOscillator(); o.type = 'sine'; o.frequency.value = f; o.connect(g); o.start(start); o.stop(start + dur + 0.02); ringNodes.push(o); });
+    };
+    // z góry zaplanowane na ~50 s – działa też gdy okno jest schowane (bez timerów)
+    for (let k = 0; k < 17; k++) {
+      if (kind === 'ring') { const base = t0 + k * 3; burst(base, 0.4, [440, 480]); burst(base + 0.6, 0.4, [440, 480]); }
+      else { burst(t0 + k * 4, 1.0, [425]); }
+    }
+  } catch {}
+}
+document.addEventListener('click', () => { if (ringCtx && ringCtx.state === 'suspended') ringCtx.resume(); }, { once: false });
+
+// ====== DZWONIENIE (WebRTC) ======
+let callSocket = null, peerConnection = null, localStream = null, currentCallPartnerId = null, currentCallId = null, pendingIce = [];
+
+function connectCallSocket() {
+  if (!window.phoneOn) return;
+  if (callSocket && (callSocket.readyState === 0 || callSocket.readyState === 1)) return;
+  callSocket = new WebSocket(location.origin.replace('http', 'ws') + '/call-signal?token=' + token);
+  callSocket.onmessage = (e) => handleSignal(JSON.parse(e.data));
+  callSocket.onclose = () => { callSocket = null; if (token && window.phoneOn) setTimeout(connectCallSocket, 3000); }; // automatyczne łączenie po zerwaniu
+}
+function sendSignal(obj) { if (callSocket && callSocket.readyState === 1) callSocket.send(JSON.stringify(obj)); }
+
+let iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+async function loadIceServers() { try { const r = await api('/customer/ice-servers'); if (r && r.iceServers) iceServers = r.iceServers; } catch {} }
+function createPeerConnection() {
+  const pc = new RTCPeerConnection({ iceServers });
+  pc.onicecandidate = (e) => { if (e.candidate && currentCallId) sendSignal({ type: 'ice-candidate', callId: currentCallId, candidate: e.candidate }); };
+  pc.ontrack = (e) => {
+    const el = document.getElementById('remote-audio');
+    el.srcObject = (e.streams && e.streams[0]) || new MediaStream([e.track]);
+    el.muted = false; el.volume = 1;
+    const p = el.play(); if (p && p.catch) p.catch(() => {});
+  };
+  pc.onconnectionstatechange = () => {
+    const st = document.getElementById('call-status');
+    if (!st || pc !== peerConnection) return;
+    if (pc.connectionState === 'connected') st.textContent = 'Połączono';
+    else if (pc.connectionState === 'connecting') st.textContent = 'Łączenie dźwięku...';
+    else if (pc.connectionState === 'failed') st.textContent = 'Brak dźwięku (sieć blokuje połączenie)';
+  };
+  return pc;
+}
+// kandydaci ICE mogą przyjść przed odpowiedzią/odebraniem – buforujemy i dodajemy, gdy jest remoteDescription
+async function addIce(candidate) {
+  if (peerConnection && peerConnection.remoteDescription) await peerConnection.addIceCandidate(candidate).catch(() => {});
+  else pendingIce.push(candidate);
+}
+async function flushIce() {
+  const list = pendingIce; pendingIce = [];
+  for (const c of list) await peerConnection.addIceCandidate(c).catch(() => {});
+}
+
+async function callNumber(phoneNumber, name) {
+  if (currentCallId || peerConnection) return; // już trwa rozmowa
+  showScreen('screen-call');
+  document.getElementById('call-name').textContent = name;
+  document.getElementById('call-status').textContent = 'Dzwonię...';
+  document.getElementById('call-accept-btn').style.display = 'none';
+  try {
+    const micId = localStorage.getItem('afb_mic');
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: micId ? { deviceId: { exact: micId } } : true });
+  } catch { document.getElementById('call-status').textContent = 'Brak dostępu do mikrofonu'; setTimeout(() => { teardownCall(); showScreen('screen-home'); }, 1800); return; }
+  await loadIceServers();
+  peerConnection = createPeerConnection();
+  localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
+  applySpeaker();
+  const offer = await peerConnection.createOffer();
+  await peerConnection.setLocalDescription(offer);
+  sendSignal({ type: 'call-offer', toPhoneNumber: phoneNumber, offer });
+  startRing('back');
+}
+
+async function handleSignal(msg) {
+  if (msg.type === 'call-ringing') { currentCallId = msg.callId; return; }
+
+  if (msg.type === 'call-offer') {
+    if (currentCallId || peerConnection) { sendSignal({ type: 'call-hangup', callId: msg.callId }); return; } // zajęty
+    currentCallId = msg.callId;
+    currentCallPartnerId = msg.fromCustomerId;
+    showScreen('screen-call');
+    const label = msg.viaNumber ? ` (numer ${msg.viaNumber})` : '';
+    document.getElementById('call-name').textContent = `${msg.fromCaller.first_name} ${msg.fromCaller.last_name}`;
+    document.getElementById('call-status').textContent = 'Połączenie przychodzące' + label + '...';
+    document.getElementById('call-accept-btn').style.display = 'inline-block';
+    window.pendingOffer = msg.offer;
+    startRing('ring');
+    return;
+  }
+
+  // sygnały dla innego połączenia niż bieżące ignorujemy
+  if (msg.callId && currentCallId && msg.callId !== currentCallId) return;
+
+  if (msg.type === 'call-answer') {
+    stopRing();
+    currentCallPartnerId = msg.fromCustomerId;
+    document.getElementById('call-status').textContent = 'Połączono';
+    await peerConnection.setRemoteDescription(msg.answer);
+    await flushIce();
+  }
+  if (msg.type === 'ice-candidate') await addIce(msg.candidate);
+  if (msg.type === 'call-taken') { // ktoś inny z dyżurnych odebrał – u nas koniec sygnału
+    stopRing();
+    document.getElementById('call-status').textContent = 'Odebrane przez kogoś innego';
+    setTimeout(() => { teardownCall(); showScreen('screen-home'); }, 1200);
+  }
+  if (msg.type === 'call-error') {
+    stopRing();
+    document.getElementById('call-status').textContent = msg.error;
+    setTimeout(() => { teardownCall(); showScreen('screen-home'); }, 1800);
+  }
+  if (msg.type === 'call-hangup') {
+    stopRing();
+    document.getElementById('call-status').textContent = 'Rozłączono';
+    setTimeout(() => { teardownCall(); showScreen('screen-home'); }, 1200);
+  }
+}
+
+async function acceptCall() {
+  stopRing();
+  document.getElementById('call-accept-btn').style.display = 'none';
+  try {
+    const micId = localStorage.getItem('afb_mic');
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: micId ? { deviceId: { exact: micId } } : true });
+  } catch { document.getElementById('call-status').textContent = 'Brak dostępu do mikrofonu'; hangupCall(); return; }
+  await loadIceServers();
+  peerConnection = createPeerConnection();
+  localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
+  applySpeaker();
+  await peerConnection.setRemoteDescription(window.pendingOffer);
+  await flushIce();
+  const answer = await peerConnection.createAnswer();
+  await peerConnection.setLocalDescription(answer);
+  sendSignal({ type: 'call-answer', callId: currentCallId, answer });
+  document.getElementById('call-status').textContent = 'Połączono';
+}
+function hangupCall() {
+  if (currentCallId) sendSignal({ type: 'call-hangup', callId: currentCallId });
+  stopRing();
+  teardownCall();
+  showScreen('screen-home');
+}
+function teardownCall() {
+  stopRing();
+  if (peerConnection) { peerConnection.close(); peerConnection = null; }
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  currentCallPartnerId = null; currentCallId = null; pendingIce = [];
+  document.getElementById('call-accept-btn').style.display = 'none';
+}
+
+// ====== WŁĄCZANIE / WYŁĄCZANIE TELEFONU ======
+function powerOff() { return closePhoneFully(); }
+// Całkowite zamknięcie: telefon off na serwerze (zejście ze służby, brak połączeń), rozłączenie, a potem zamknięcie aplikacji.
+// Idempotentne – kolejne kliknięcia w trakcie zamykania są ignorowane.
+let closingFully = false;
+async function closePhoneFully() {
+  if (closingFully) return;
+  if (!confirm('Zamknąć telefon? Aplikacja się wyłączy, a połączenia nie będą odbierane.')) return;
+  closingFully = true;
+  try {
+    if (currentCallId || peerConnection) hangupCall();
+    try { await api('/customer/phone/close', 'POST'); } catch {}
+    stopRing(); stopThreadPolling();
+    if (callSocket) { const sk = callSocket; callSocket = null; try { sk.close(); } catch {} }
+    if (window.electronAPI && window.electronAPI.quitPhone) { window.electronAPI.quitPhone(); return; }
+    showScreen('screen-off');
+    window.close(); // przeglądarka zamknie kartę tylko jeśli sama ją otworzyła
+    const m = document.getElementById('off-msg');
+    if (m) { m.textContent = 'Telefon wyłączony. Możesz zamknąć tę kartę.'; m.className = 'msg ok'; }
+  } finally { setTimeout(() => { closingFully = false; }, 1500); }
+}
+async function powerOn() {
+  const msg = document.getElementById('off-msg');
+  msg.textContent = ''; msg.className = 'msg';
+  try { await api('/customer/phone/power', 'POST', { on: true }); } catch (err) { msg.textContent = err.message; msg.className = 'msg error'; return; }
+  window.phoneOn = true;
+  await enterPhone();
+}
+
+// ====== ROZMIAR TELEFONU ======
+// komputer (aplikacja Electron): zmienia rozmiar okna; przeglądarka: rozmiar ramki na środku; mały ekran (prawdziwy telefon): pełny ekran bez ramki
+const SIZE_OPTIONS = [['auto', 'Automatyczny'], ['s', 'Mały'], ['m', 'Średni'], ['l', 'Duży'], ['xl', 'Bardzo duży'], ['full', 'Pełny ekran (bez ramki)']];
+const BROWSER_W = { s: 320, m: 380, l: 440, xl: 500 };
+const ELECTRON_SCALE = { auto: 1, s: 0.85, m: 1, l: 1.2, xl: 1.4 };
+const isSmallScreen = () => matchMedia('(max-width: 700px)').matches || (matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 900);
+function sizePref() { try { return localStorage.getItem('afb_size') || 'auto'; } catch { return 'auto'; } }
+function applyPhoneSize(fromResize) {
+  const pref = sizePref();
+  const b = document.body;
+  if (window.electronAPI) { // okno ma stały rozmiar nadawany przez aplikację
+    b.classList.remove('browser', 'mode-full');
+    if (!fromResize && window.electronAPI.setSize) window.electronAPI.setSize(ELECTRON_SCALE[pref] || 1);
+    return;
+  }
+  b.classList.add('browser');
+  const mode = pref === 'auto' ? (isSmallScreen() ? 'full' : 'm') : pref;
+  b.classList.toggle('mode-full', mode === 'full');
+  if (mode !== 'full') document.documentElement.style.setProperty('--pw', (BROWSER_W[mode] || 380) + 'px');
+}
+function initSizeSetting() {
+  const sel = document.getElementById('size-select'); if (!sel) return;
+  const pref = sizePref();
+  const inApp = !!window.electronAPI;
+  sel.innerHTML = SIZE_OPTIONS.filter(([k]) => !(inApp && k === 'full')).map(([k, n]) => `<option value="${k}" ${k === pref ? 'selected' : ''}>${n}</option>`).join('');
+  const hint = document.getElementById('size-hint');
+  hint.textContent = inApp && !window.electronAPI.setSize ? 'Zmiana rozmiaru w aplikacji na komputer działa od wersji 1.1.1 — zainstaluje się sama.' : '';
+  sel.onchange = () => { try { localStorage.setItem('afb_size', sel.value); } catch {} applyPhoneSize(); settingsSaved('Rozmiar zapisany ✓'); };
+}
+window.addEventListener('resize', () => applyPhoneSize(true));
+applyPhoneSize();
+
+// ====== ZAPAMIĘTANE POSTACIE (na tym urządzeniu) ======
+let pendingRemember = false, pendingUsername = '';
+function loadChars() { try { const a = JSON.parse(localStorage.getItem('afb_chars') || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } }
+function saveChars(a) { try { localStorage.setItem('afb_chars', JSON.stringify(a)); } catch {} }
+const isRemembered = (t) => !!t && loadChars().some(c => c.token === t);
+function rememberChar(t, name, phone) {
+  const a = loadChars(); const i = a.findIndex(c => c.token === t);
+  const username = (i >= 0 ? a[i].username : '') || pendingUsername || '';
+  const entry = { token: t, name, phone, username };
+  // ta sama postać (ten sam numer) zalogowana ponownie: podmień stary wpis
+  const dup = a.findIndex(c => c.phone === phone && c.token !== t);
+  if (dup >= 0) a.splice(dup, 1);
+  const j = a.findIndex(c => c.token === t);
+  if (j >= 0) a[j] = entry; else a.push(entry);
+  saveChars(a);
+}
+async function charAlive(t) { try { const r = await fetch('/customer/me', { headers: { Authorization: 'Bearer ' + t } }); return r.ok; } catch { return null; } }
+function renderSavedLogin() {
+  const box = document.getElementById('saved-login'); if (!box) return;
+  const a = loadChars();
+  box.innerHTML = a.length ? `<div style="margin-top:18px;color:var(--muted);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase">Zapamiętane postacie</div>` + a.map((c, i) => `
+    <button class="btn secondary" style="margin-top:8px;text-align:left" onclick="loginSaved(${i})">👤 ${escapeHtml(c.name)} <span style="opacity:.6;font-family:monospace">${escapeHtml(c.phone || '')}</span></button>`).join('') : '';
+}
+async function loginSaved(i) {
+  const a = loadChars(); const c = a[i]; const msg = document.getElementById('login-msg');
+  if (!c) return;
+  const alive = await charAlive(c.token);
+  if (alive === null) { msg.textContent = 'Brak połączenia z serwerem.'; msg.className = 'msg error'; return; }
+  if (!alive) {
+    a.splice(i, 1); saveChars(a); renderSavedLogin();
+    if (c.username) document.getElementById('username').value = c.username;
+    msg.textContent = 'Sesja tej postaci wygasła — zaloguj się ponownie hasłem.'; msg.className = 'msg error'; return;
+  }
+  token = c.token; localStorage.setItem('afb_token', token);
+  enterPhone();
+}
+function showChars() {
+  showScreen('screen-chars', { isMain: true });
+  const a = loadChars();
+  document.getElementById('chars-msg').textContent = '';
+  document.getElementById('chars-list').innerHTML = a.length ? a.map((c, i) => `
+    <div class="panel" style="padding:12px 14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div><b style="font-size:.9rem">${escapeHtml(c.name)}</b>${c.token === token ? '<span class="pill">aktywna</span>' : ''}<div style="color:var(--muted);font-size:.78rem;font-family:monospace">${escapeHtml(c.phone || '')}</div></div>
+        <div style="display:flex;gap:6px">
+          ${c.token === token ? '' : `<button class="btn small" onclick="switchTo(${i})">Przełącz</button>`}
+          <button class="btn small secondary" onclick="forgetChar(${i})">Zapomnij</button>
+        </div>
+      </div>
+    </div>`).join('') : '<div id="empty">Brak zapamiętanych postaci. Zaloguj się z zaznaczoną opcją „Zapamiętaj postać”.</div>';
+}
+async function switchTo(i) {
+  const a = loadChars(); const c = a[i]; if (!c) return;
+  const alive = await charAlive(c.token);
+  if (alive === null) return flash('chars-msg', 'Brak połączenia z serwerem.', false);
+  if (!alive) { a.splice(i, 1); saveChars(a); showChars(); return flash('chars-msg', `Sesja postaci ${c.name} wygasła — wyloguj się i zaloguj ją hasłem.`, false); }
+  try { if (currentCallId || peerConnection) hangupCall(); } catch {}
+  try { await api('/customer/logout', 'POST', { keep_session: isRemembered(token) }); } catch {}
+  try { stopRing(); stopThreadPolling(); if (callSocket) { const sk = callSocket; callSocket = null; sk.close(); } } catch {}
+  localStorage.setItem('afb_token', c.token);
+  location.reload();
+}
+async function forgetChar(i) {
+  const a = loadChars(); const c = a[i]; if (!c) return;
+  if (!confirm(`Zapomnieć postać ${c.name} na tym urządzeniu? Zostanie wylogowana.`)) return;
+  a.splice(i, 1); saveChars(a);
+  if (c.token === token) { await switchCharacterNoConfirm(); return; }
+  try { fetch('/customer/logout', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + c.token }, body: '{}' }); } catch {}
+  showChars();
+}
+async function switchCharacterNoConfirm() {
+  try { if (currentCallId || peerConnection) hangupCall(); } catch {}
+  try { await api('/customer/logout', 'POST'); } catch {}
+  try { stopRing(); stopThreadPolling(); if (callSocket) { const sk = callSocket; callSocket = null; sk.close(); } } catch {}
+  logout();
+}
+renderSavedLogin();
+
+// ====== PLECAK: udostępnienie do przeszukania i historia ======
+const BP_ACTIONS = { UDOSTEPNIONY: '🎒 Udostępniono plecak', PRZESZUKANIE: '🔎 Plecak przeszukany', KONFISKATA: '🚔 Konfiskata', ZWROT: '✅ Plecak oddany', ZABRANY: '↩️ Plecak odebrany' };
+function bpBanner(st) {
+  if (!st || !st.open) return '';
+  const till = new Date(st.expires_at).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  return `<div class="panel" style="padding:12px 14px;margin-bottom:12px;border-color:rgba(248,113,113,.5)">
+    <b style="font-size:.88rem">🔎 Plecak jest udostępniony do przeszukania</b>
+    <div style="color:var(--muted);font-size:.78rem;margin:4px 0 8px">Funkcjonariusz może go przeszukać do ${till}.</div>
+    <button class="btn small secondary" onclick="bpTakeBack()">Zabierz plecak</button></div>`;
+}
+function bpHistory(st) {
+  if (!st || !st.history || !st.history.length) return '';
+  return `<div style="margin-top:14px;color:var(--muted);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase">Historia plecaka</div>` + st.history.slice(0, 8).map(h => {
+    const t = new Date(h.created_at).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return `<div style="font-size:.78rem;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)">${BP_ACTIONS[h.action] || escapeHtml(h.action)}${h.item_name ? ` — ${escapeHtml(h.item_name)} ×${h.qty}` : ''}<span style="color:var(--muted)"> · ${t}${h.actor ? ' · ' + escapeHtml(h.actor) : ''}</span></div>`;
+  }).join('');
+}
+async function bpTakeBack() {
+  try { await api('/customer/backpack/close', 'POST'); flash('inv-msg', 'Plecak odebrany.', true); showInventory(); }
+  catch (e) { flash('inv-msg', e.message, false); }
+}
+
+// ====== START ======
+if (token) enterPhone();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // po wdrożeniu nowej wersji strony przeładuj się raz, żeby od razu zobaczyć aktualizację
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloaded) { reloaded = true; location.reload(); } });
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
