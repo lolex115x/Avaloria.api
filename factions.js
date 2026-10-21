@@ -7,13 +7,15 @@ const treasury = require('./treasury.js');
 const FACTIONS = {
   EMS:  { label: 'EMS',  icon: '🚑', full: 'Emergency Medical Services', invoices: true },
   DOT:  { label: 'DOT',  icon: '🚧', full: 'Department of Transportation', invoices: true },
-  LAPD: { label: 'LAPD', icon: '🚓', full: 'Los Angeles Police Department', invoices: false },
+  LAPD: { label: 'LAPD', icon: '🚓', full: 'Los Angeles Police Department', invoices: true, invoiceKind: 'MANDAT' },
   LAFD: { label: 'LAFD', icon: '🚒', full: 'Los Angeles Fire Department', invoices: false },
   DOJ:  { label: 'DOJ',  icon: '⚖️', full: 'Department of Justice', invoices: false, panel: false },
 };
 // Panele frakcji w telefonie: domyślnie WŁĄCZONE (tryb przejściowy). PHONE_FACTION_PANELS=off chowa je z telefonu po przejściu na tablet MDT;
 // kod i endpointy zostają, więc powrót to zmiana jednej zmiennej środowiskowej.
+const MDT_TABLET = ['on', '1', 'true'].includes(String(process.env.MDT_TABLET_ENABLED || 'off').toLowerCase()); // tablet MDT wstrzymany – skrót w telefonie domyślnie ukryty
 const PHONE_PANELS = String(process.env.PHONE_FACTION_PANELS || 'on').toLowerCase() !== 'off';
+const kindOf = (f) => (FACTIONS[f] && FACTIONS[f].invoiceKind) || 'FAKTURA';
 const RANKS = ['PRACOWNIK', 'ZASTEPCA', 'SZEF'];
 const rankIdx = (r) => RANKS.indexOf(r);
 
@@ -112,7 +114,7 @@ function register(app, { pool, requireCustomerAuth, requireInternalKey }) {
   // --- moje frakcje (appki odblokowują się na tej podstawie) ---
   app.get('/customer/factions/me', requireCustomerAuth, wrap(async (req, res) => {
     const r = await pool.query('SELECT faction, rank FROM faction_members WHERE customer_id = $1 ORDER BY faction', [req.customerId]);
-    res.json(r.rows.map((x) => ({ ...x, ...FACTIONS[x.faction], panel: PHONE_PANELS && FACTIONS[x.faction].panel !== false, ...(PHONE_PANELS ? {} : { invoices: false }) })));
+    res.json(r.rows.map((x) => ({ ...x, ...FACTIONS[x.faction], panel: PHONE_PANELS && FACTIONS[x.faction].panel !== false, mdt_tablet: MDT_TABLET, ...(PHONE_PANELS ? {} : { invoices: false }) })));
   }));
 
   // --- podsumowanie ---
@@ -161,11 +163,11 @@ function register(app, { pool, requireCustomerAuth, requireInternalKey }) {
       if (!okT) return res.status(400).json({ error: 'Nie ma takiego zgłoszenia w tej frakcji.' });
     }
     const inv = (await pool.query(
-      `INSERT INTO invoices (faction, issuer_customer_id, customer_id, amount, title, ticket_id, source) VALUES ($1,$2,$3,$4,$5,$6,'manual') RETURNING *`,
-      [req.faction, req.customerId, target.customer_id, amount, title, ticketId])).rows[0];
+      `INSERT INTO invoices (faction, issuer_customer_id, customer_id, amount, title, ticket_id, source, kind) VALUES ($1,$2,$3,$4,$5,$6,'manual',$7) RETURNING *`,
+      [req.faction, req.customerId, target.customer_id, amount, title, ticketId, kindOf(req.faction)])).rows[0];
     await pool.query(
       'INSERT INTO messages (from_customer_id, to_customer_id, content) VALUES ($1,$2,$3)',
-      [req.customerId, target.customer_id, `🧾 Faktura #${inv.invoice_id} od ${req.faction}: ${amount}$ — ${title}. Zapłać w appce Bank → zakładka Faktury.`]);
+      [req.customerId, target.customer_id, `🧾 ${kindOf(req.faction) === 'MANDAT' ? 'Mandat' : 'Faktura'} #${inv.invoice_id} od ${req.faction}: ${amount}$ — ${title}. Zapłać w appce Bank → zakładka Faktury.`]);
     res.json({ ok: true, invoice: inv, customer: `${target.first_name} ${target.last_name}` });
   }));
 
@@ -174,12 +176,23 @@ function register(app, { pool, requireCustomerAuth, requireInternalKey }) {
     const all = req.query.scope === 'all';
     if (all && rankIdx(req.rank) < rankIdx('ZASTEPCA')) return res.status(403).json({ error: 'Za niska ranga.' });
     const r = await pool.query(
-      `SELECT i.invoice_id, i.amount, i.title, i.status, i.created_at, i.paid_at,
+      `SELECT i.invoice_id, i.amount, i.title, i.status, i.kind, i.created_at, i.paid_at,
               c.first_name AS c_first, c.last_name AS c_last, u.first_name AS i_first, u.last_name AS i_last
        FROM invoices i JOIN customers c ON c.customer_id = i.customer_id JOIN customers u ON u.customer_id = i.issuer_customer_id
        WHERE i.faction = $1 ${all ? '' : 'AND i.issuer_customer_id = $2'}
        ORDER BY i.created_at DESC LIMIT 40`, all ? [req.faction] : [req.faction, req.customerId]);
     res.json(r.rows);
+  }));
+
+  // historia mandatów/faktur danej osoby wystawionych przez tę frakcję (po numerze telefonu) – tylko dla frakcji z fakturami
+  app.get('/customer/factions/:faction/invoices/history', requireCustomerAuth, member('PRACOWNIK', true), wrap(async (req, res) => {
+    const ph = String(req.query.phone || '').trim();
+    const c = (await pool.query(`SELECT customer_id, first_name, last_name FROM customers WHERE phone_number=$1 AND username NOT LIKE 'svc\\_%' AND username <> 'npc_nieznajomy'`, [ph])).rows[0];
+    if (!c) return res.status(404).json({ error: 'Nie znaleziono takiego numeru.' });
+    const rows = (await pool.query(
+      `SELECT i.invoice_id, i.amount, i.title, i.status, i.kind, i.created_at, i.paid_at, u.first_name AS i_first, u.last_name AS i_last
+       FROM invoices i JOIN customers u ON u.customer_id = i.issuer_customer_id WHERE i.customer_id=$1 AND i.faction=$2 ORDER BY i.created_at DESC LIMIT 30`, [c.customer_id, req.faction])).rows;
+    res.json({ person: `${c.first_name} ${c.last_name}`, items: rows });
   }));
 
   app.post('/customer/factions/:faction/invoices/:id/cancel', requireCustomerAuth, member('PRACOWNIK', true), wrap(async (req, res) => {
@@ -259,7 +272,7 @@ function register(app, { pool, requireCustomerAuth, requireInternalKey }) {
 
   // --- strona płacącego (appka Bank → Faktury) ---
   app.get('/customer/invoices', requireCustomerAuth, wrap(async (req, res) => {
-    const base = `SELECT i.invoice_id, i.faction, i.amount, i.title, i.status, i.created_at, i.paid_at, u.first_name AS i_first, u.last_name AS i_last
+    const base = `SELECT i.invoice_id, i.faction, i.amount, i.title, i.status, i.kind, i.created_at, i.paid_at, u.first_name AS i_first, u.last_name AS i_last
                   FROM invoices i JOIN customers u ON u.customer_id = i.issuer_customer_id WHERE i.customer_id = $1`;
     const pending = (await pool.query(`${base} AND i.status='OCZEKUJE' ORDER BY i.created_at DESC LIMIT 50`, [req.customerId])).rows;
     const recent = (await pool.query(`${base} AND i.status='OPLACONA' ORDER BY i.paid_at DESC LIMIT 10`, [req.customerId])).rows;
@@ -278,11 +291,11 @@ function register(app, { pool, requireCustomerAuth, requireInternalKey }) {
       if (acc.status !== 'ACTIVE') { await client.query('ROLLBACK'); return res.status(403).json({ error: 'Twoje konto jest zablokowane.' }); }
       if (Number(acc.balance) < Number(inv.amount)) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Niewystarczające środki.' }); }
       await client.query('UPDATE accounts SET balance = balance - $2 WHERE account_id=$1', [acc.account_id, inv.amount]);
-      const vat = Math.min(treasury.vatOf(inv.amount), Number(inv.amount));
+      const vat = inv.kind === 'MANDAT' ? 0 : Math.min(treasury.vatOf(inv.amount), Number(inv.amount)); // mandat nie podlega VAT
       const net = Number(inv.amount) - vat;
-      await treasury.credit(client, inv.faction, net, 'INVOICE', `FV #${inv.invoice_id}`, null, null);
+      await treasury.credit(client, inv.faction, net, 'INVOICE', `${inv.kind === 'MANDAT' ? 'MANDAT' : 'FV'} #${inv.invoice_id}`, null, null);
       if (vat > 0) await treasury.credit(client, 'BANK', vat, 'VAT', `FV #${inv.invoice_id} (${inv.faction})`, null, inv.faction);
-      await client.query(`INSERT INTO bank_transactions (sender_account_id, amount, title, transaction_type) VALUES ($1,$2,$3,'INVOICE')`, [acc.account_id, inv.amount, `Faktura #${inv.invoice_id} (${inv.faction}): ${inv.title}`]);
+      await client.query(`INSERT INTO bank_transactions (sender_account_id, amount, title, transaction_type) VALUES ($1,$2,$3,'INVOICE')`, [acc.account_id, inv.amount, `${inv.kind === 'MANDAT' ? 'Mandat' : 'Faktura'} #${inv.invoice_id} (${inv.faction}): ${inv.title}`]);
       await client.query(`UPDATE invoices SET status='OPLACONA', paid_at=now(), vat=$2 WHERE invoice_id=$1`, [inv.invoice_id, vat]);
       await client.query('COMMIT');
       res.json({ ok: true });

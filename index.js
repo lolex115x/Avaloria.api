@@ -130,6 +130,8 @@ app.get('/internal/ssn/:discordId', requireInternalKey, async (req, res) => {
 });
 
 // ====== AKTYWACJA TELEFONU (bez wizyty w banku) ======
+// AUTO_OPEN_ACCOUNT=on: konto bankowe zakładane razem z telefonem (domyślnie off – konto zakłada pracownik banku)
+const AUTO_OPEN_ACCOUNT = ['on', '1', 'true'].includes(String(process.env.AUTO_OPEN_ACCOUNT || 'off').toLowerCase());
 const MAX_CHARACTERS_PER_DISCORD = parseInt(process.env.MAX_CHARACTERS_PER_DISCORD || '3', 10);
 const normSsn = (v) => String(v || '').trim().toUpperCase().replace(/[\s-]+/g, '');
 
@@ -153,6 +155,7 @@ app.post('/internal/customers/activate-phone', requireInternalKey, async (req, r
   if (ssn.length < 4 || ssn.length > 24) return res.status(400).json({ error: 'Nieprawidłowy SSN postaci.' });
 
   const client = await pool.connect();
+  let released = false;
   try {
     await client.query('BEGIN');
     // blokada na SSN i na gracza - dwa jednoczesne wywołania nie utworzą duplikatu
@@ -183,27 +186,41 @@ app.post('/internal/customers/activate-phone', requireInternalKey, async (req, r
       return res.status(409).json({ error: `Masz już aktywne telefony dla maksymalnej liczby postaci (${MAX_CHARACTERS_PER_DISCORD}).` });
     }
 
-    const username = `${first_name}.${last_name}${crypto.randomInt(100, 999)}`.toLowerCase().replace(/\s+/g, '');
     const tempPassword = generateTempPassword();
     const passwordHash = await bcrypt.hash(tempPassword, 10);
-    const phoneNumber = await newUniquePhone(client);
-
-    const ins = await client.query(
-      `INSERT INTO customers (discord_user_id, first_name, last_name, date_of_birth, ssn_rp, username, password_hash, phone_number)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING customer_id`,
-      [String(discord_user_id), String(first_name).trim(), String(last_name).trim(), date_of_birth || null, ssn, username, passwordHash, phoneNumber]
-    );
+    // INSERT z ponowieniem przy kolizji unikalnego loginu/numeru telefonu (SAVEPOINT, żeby nie psuć transakcji)
+    let ins = null, username = null, phoneNumber = null;
+    for (let attempt = 0; attempt < 8 && !ins; attempt++) {
+      username = `${first_name}.${last_name}${crypto.randomInt(100, 9999)}`.toLowerCase().replace(/\s+/g, '');
+      phoneNumber = await newUniquePhone(client);
+      await client.query('SAVEPOINT ins_cust');
+      try {
+        ins = await client.query(
+          `INSERT INTO customers (discord_user_id, first_name, last_name, date_of_birth, ssn_rp, username, password_hash, phone_number, must_change_password)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true) RETURNING customer_id`,
+          [String(discord_user_id), String(first_name).trim(), String(last_name).trim(), date_of_birth || null, ssn, username, passwordHash, phoneNumber]
+        );
+        await client.query('RELEASE SAVEPOINT ins_cust');
+      } catch (e) {
+        await client.query('ROLLBACK TO SAVEPOINT ins_cust');
+        if (e.code !== '23505' || /ssn/i.test(String(e.constraint || ''))) throw e; // tylko kolizja loginu/telefonu jest ponawiana
+      }
+    }
+    if (!ins) throw new Error('Nie udało się wygenerować unikalnego loginu/numeru.');
+    let accountNumber = null;
+    if (AUTO_OPEN_ACCOUNT) accountNumber = await openAccountFor(client, ins.rows[0].customer_id); // w tej samej transakcji: wszystko albo nic
     await client.query('COMMIT');
+    client.release(); released = true; // zwolnij połączenie przed dalszymi zapytaniami z puli (inaczej zakleszczenie puli przy równoległych aktywacjach)
     const customerId = ins.rows[0].customer_id;
     await factions.applyPending(pool, customerId, String(discord_user_id)).catch((e) => console.error('applyPending:', e.message));
     await logAction(actor || 'system', 'ACTIVATE_PHONE', `customer_id=${customerId}`, 'OK');
-    res.json({ customer_id: customerId, phone_number: phoneNumber, username, temp_password: tempPassword });
+    res.json({ customer_id: customerId, phone_number: phoneNumber, username, temp_password: tempPassword, account_number: accountNumber, must_change_password: true });
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
+    if (!released) await client.query('ROLLBACK').catch(() => {});
     console.error(err);
     res.status(500).json({ error: 'Błąd aktywacji telefonu.' });
   } finally {
-    client.release();
+    if (!released) client.release();
   }
 });
 
@@ -435,9 +452,23 @@ app.post('/internal/customers/:id/reset-password', requireInternalKey, async (re
     [customerId, passwordHash]
   );
   if (result.rows.length === 0) return res.status(404).json({ error: 'Nie znaleziono klienta.' });
+  await pool.query('DELETE FROM sessions WHERE customer_id = $1', [customerId]); // stare sesje przestają działać
 
   await logAction(actor || 'system', 'RESET_PASSWORD', `customer_id=${customerId}`, 'OK');
   res.json({ username: result.rows[0].username, temp_password: tempPassword });
+});
+
+// Gracz sam odzyskuje dostęp (DM zamknięte / zgubione hasło): weryfikacja = ten sam discord_user_id + SSN postaci
+app.post('/internal/customers/reissue-password', requireInternalKey, async (req, res) => {
+  const ssn = normSsn(req.body.ssn_rp); const did = String(req.body.discord_user_id || '');
+  if (!ssn || !did) return res.status(400).json({ error: 'Wymagane: discord_user_id, ssn_rp.' });
+  const c = (await pool.query("SELECT customer_id, username, phone_number FROM customers WHERE discord_user_id = $1 AND upper(replace(replace(ssn_rp, ' ', ''), '-', '')) = $2", [did, ssn])).rows[0];
+  if (!c) { await logAction(req.body.actor || did, 'REISSUE_PASSWORD', 'brak dopasowania', 'DENIED'); return res.status(404).json({ error: 'Nie znaleziono Twojej postaci o tym SSN.' }); }
+  const tempPassword = generateTempPassword();
+  await pool.query('UPDATE customers SET password_hash = $2, must_change_password = true WHERE customer_id = $1', [c.customer_id, await bcrypt.hash(tempPassword, 10)]);
+  await pool.query('DELETE FROM sessions WHERE customer_id = $1', [c.customer_id]);
+  await logAction(req.body.actor || did, 'REISSUE_PASSWORD', `customer_id=${c.customer_id}`, 'OK');
+  res.json({ username: c.username, phone_number: c.phone_number, temp_password: tempPassword, must_change_password: true });
 });
 
 // ====== ZAMROŻENIE / ODBLOKOWANIE KONTA ======

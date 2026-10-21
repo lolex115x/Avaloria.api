@@ -77,6 +77,11 @@ function register(app, { pool }) {
     const plate = normPlate(req.body.plate);
     if (plate.length < 3) return res.status(400).json({ error: 'Podaj tablicę rejestracyjną.' });
     let owner = null;
+    if (!req.body.owner_customer_id && req.body.owner_phone) {
+      const o = (await pool.query('SELECT c.customer_id FROM customers c WHERE c.phone_number=$1 AND ' + REAL, [clip(req.body.owner_phone, 20)])).rows[0];
+      if (!o) return res.status(404).json({ error: 'Nie znaleziono właściciela o tym numerze.' });
+      req.body.owner_customer_id = o.customer_id;
+    }
     if (req.body.owner_customer_id) {
       owner = parseInt(req.body.owner_customer_id, 10);
       if (!(await pool.query('SELECT 1 FROM customers c WHERE c.customer_id=$1 AND ' + REAL, [owner])).rowCount) return res.status(400).json({ error: 'Nie ma takiego właściciela.' });

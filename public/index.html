@@ -492,8 +492,8 @@ body.mode-full .fab{bottom:calc(72px + env(safe-area-inset-bottom))}
 let token = localStorage.getItem('afb_token') || null;
 
 // ====== API ======
-async function api(path, method='GET', body=null) {
-  const headers = {'Content-Type':'application/json'};
+async function api(path, method='GET', body=null, extraHeaders=null) {
+  const headers = Object.assign({'Content-Type':'application/json'}, extraHeaders || {});
   if (token) headers['Authorization'] = 'Bearer ' + token;
   const res = await fetch(path, {method, headers, body: body ? JSON.stringify(body) : undefined});
   const data = await res.json().catch(() => ({}));
@@ -609,7 +609,7 @@ const FACTION_APP_COLORS = { EMS: 'linear-gradient(135deg,#ef4444,#7f1d1d)', DOT
 const MDT_APP = { id: 'mdt-tablet', name: 'Tablet MDT', icon: '🛡️', color: 'linear-gradient(135deg,#334155,#0f172a)' };
 function factionApps() {
   const mine = window.myFactions || [];
-  const launcher = mine.length ? [MDT_APP] : [];   // osobna aplikacja (tablet) – telefon zostaje, tu tylko skrót
+  const launcher = mine.some(x => x.mdt_tablet) ? [MDT_APP] : [];   // osobna aplikacja (tablet) – telefon zostaje, tu tylko skrót
   const panels = mine.filter(f => f.panel || f.invoices).map(f => ({ id: 'fak-' + f.faction, name: 'Panel ' + f.label, icon: f.icon, color: FACTION_APP_COLORS[f.faction] || 'linear-gradient(135deg,#64748b,#1e293b)' }));
   return launcher.concat(panels);
 }
@@ -967,7 +967,7 @@ async function loadInvoices() {
     const badge = document.getElementById('inv-badge');
     badge.textContent = pending.length; badge.style.display = pending.length ? 'inline-block' : 'none';
     const row = (i, withPay) => `<div class="tx-row"><div>
-        <div class="title">#${i.invoice_id} ${escapeHtml(i.faction)} — ${escapeHtml(i.title)}</div>
+        <div class="title">${i.kind === 'MANDAT' ? '⚖️ Mandat ' : ''}#${i.invoice_id} ${escapeHtml(i.faction)} — ${escapeHtml(i.title)}</div>
         <div class="meta">${escapeHtml(i.i_first)} ${escapeHtml(i.i_last)} · ${new Date(i.created_at).toLocaleString('pl-PL')}</div></div>
         <div style="text-align:right"><div class="title">${fmt(i.amount)}</div>${withPay ? `<button class="btn small" style="margin-top:4px" onclick="payInvoice(${i.invoice_id})">Zapłać</button>` : '<span class="pill ok">opłacona</span>'}</div></div>`;
     el.innerHTML = (pending.length ? pending.map(i => row(i, true)).join('') : '<div id="empty">Brak faktur do zapłaty.</div>')
@@ -1000,11 +1000,14 @@ async function openFaction(f) {
   showScreen('screen-faction', { isMain: true });
   document.getElementById('fac-title').textContent = `${info.icon} Panel ${info.label}`;
   document.getElementById('fac-rank').textContent = RANK_LABEL[info.rank] || info.rank;
+  const mandat = info.invoiceKind === 'MANDAT';
   const tabs = [['panel','Panel'],['zgloszenia','Zgłoszenia']];
   if (f === 'EMS') tabs.push(['kartoteka','Kartoteka']);
-  if (info.invoices) tabs.push(['wystaw','Wystaw'],['moje','Moje faktury']);
+  if (f === 'LAPD') tabs.push(['osoby','Osoby'],['pojazdy','Pojazdy'],['poszukiwani','Poszukiwani']);
+  if (f === 'LAPD' || f === 'LAFD') tabs.push(['raporty','Raporty']);
+  if (info.invoices) tabs.push(['wystaw', mandat ? 'Mandat' : 'Wystaw'],['moje', mandat ? 'Moje mandaty' : 'Moje faktury']);
   tabs.push(['ludzie','Ludzie']);
-  if (RANK_IDX[curRank] >= 1) { if (info.invoices) tabs.push(['wszystkie','Wszystkie faktury']); tabs.push(['dziennik','Dziennik'],['skarbiec','Skarbiec']); }
+  if (RANK_IDX[curRank] >= 1) { if (info.invoices) tabs.push(['wszystkie', mandat ? 'Wszystkie mandaty' : 'Wszystkie faktury']); tabs.push(['dziennik','Dziennik'],['skarbiec','Skarbiec']); }
   document.getElementById('fac-tabs').innerHTML = tabs.map(([id, label]) => `<button data-tab="${id}" onclick="facTab('${id}')">${label}</button>`).join('');
   facTab('panel');
 }
@@ -1016,13 +1019,18 @@ function facTab(tab) {
   if (tab === 'zgloszenia') { opsTickets(); return; }
   if (tab === 'kartoteka') { opsRecords(); return; }
   if (tab === 'dziennik') { opsAudit(); return; }
+  if (tab === 'osoby') { leoPersons(); return; }
+  if (tab === 'pojazdy') { leoVehicles(); return; }
+  if (tab === 'poszukiwani') { leoWarrants(); return; }
+  if (tab === 'raporty') { leoReports(); return; }
   if (tab === 'wystaw') {
+    const mandat = ((window.myFactions || []).find(x => x.faction === curFaction) || {}).invoiceKind === 'MANDAT';
     body.innerHTML = `<div class="panel">
       <div class="field"><label>Numer telefonu klienta</label><input id="fi-phone" type="text" placeholder="555-0000" autocomplete="off"></div>
       <div class="field"><label>Nr zgłoszenia (opcjonalnie)</label><input id="fi-ticket" type="number" min="1" step="1" placeholder="np. 12"></div>
       <div class="field"><label>Kwota ($)</label><input id="fi-amount" type="number" min="1" step="1"></div>
-      <div class="field"><label>Opis (za co)</label><input id="fi-title" type="text" maxlength="120" placeholder="np. Leczenie / Holowanie"></div>
-      <button class="btn" onclick="issueInvoice()">Wystaw fakturę</button>
+      <div class="field"><label>Opis (za co)</label><input id="fi-title" type="text" maxlength="120" placeholder="${mandat ? 'np. Przekroczenie prędkości' : 'np. Leczenie / Holowanie'}"></div>
+      <button class="btn" onclick="issueInvoice()">${mandat ? 'Wystaw mandat' : 'Wystaw fakturę'}</button>
       <div id="fi-msg" class="msg"></div></div>`;
   } else if (tab === 'moje' || tab === 'wszystkie') {
     loadFacInvoices(tab === 'wszystkie');
@@ -1043,7 +1051,7 @@ async function issueInvoice() {
       title: document.getElementById('fi-title').value.trim(),
       ticket_id: document.getElementById('fi-ticket').value ? Number(document.getElementById('fi-ticket').value) : undefined,
     });
-    msg.textContent = `Wystawiono fakturę #${r.invoice.invoice_id} dla ${r.customer}.`; msg.className = 'msg ok';
+    msg.textContent = `Wystawiono ${r.invoice.kind === 'MANDAT' ? 'mandat' : 'fakturę'} #${r.invoice.invoice_id} dla ${r.customer}.`; msg.className = 'msg ok';
     ['fi-phone','fi-amount','fi-title','fi-ticket'].forEach(id => document.getElementById(id).value = '');
   } catch (err) { msg.textContent = err.message; msg.className = 'msg error'; }
 }
@@ -1339,6 +1347,141 @@ async function opsSetRank(cid, rank) {
   if (!confirm(rank === 'ZASTEPCA' ? 'Awansować na zastępcę?' : 'Zdegradować do pracownika?')) return;
   try { await api(OPS() + `/people/${cid}/rank`, 'POST', { rank }); } catch (err) { alert(err.message); }
   opsPeople();
+}
+
+// ====== LAPD / LAFD: osoby, pojazdy, poszukiwani, raporty (korzystają z tych samych danych i uprawnień co backend /mdt) ======
+const lapi = (path, method, body) => api(path, method || 'GET', body || null, { 'X-MDT-Faction': curFaction });
+const lmsg = (id, text, ok) => { const m = document.getElementById(id); if (m) { m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'error'); } };
+const RPT_STATUS = { SZKIC: 'szkic', ZLOZONY: 'złożony', ZAMKNIETY: 'zamknięty' };
+
+async function leoPersons() {
+  fbody().innerHTML = `<div class="panel"><div class="field"><label>Szukaj osoby (imię i nazwisko, SSN, numer telefonu)</label><input id="lp-q" type="text" placeholder="min. 2 znaki" autocomplete="off"></div></div><div id="lp-res"></div>`;
+  let t = null;
+  document.getElementById('lp-q').addEventListener('input', (e) => {
+    clearTimeout(t); const q = e.target.value.trim();
+    t = setTimeout(async () => {
+      const box = document.getElementById('lp-res'); if (!box) return;
+      if (q.length < 2) { box.innerHTML = ''; return; }
+      try {
+        const r = await lapi('/mdt/persons?q=' + encodeURIComponent(q));
+        box.innerHTML = '<div class="panel">' + (r.map(p => `<div class="tx-row" style="cursor:pointer" onclick="leoPerson(${p.customer_id})"><div>
+          <div class="title">${who(p.first_name, p.last_name)}${p.warrants ? '<span class="pill warn">poszukiwany</span>' : ''}</div>
+          <div class="meta">tel. ${escapeHtml(p.phone_number)} · SSN ${escapeHtml(p.ssn_rp)}</div></div></div>`).join('') || '<div id="empty">Brak wyników.</div>') + '</div>';
+      } catch (err) { box.innerHTML = errBox(err); }
+    }, 300);
+  });
+}
+async function leoPerson(id) {
+  const body = fbody(); body.innerHTML = loadingBox();
+  try {
+    const d = await lapi('/mdt/persons/' + id);
+    let fines = null;
+    if (curFaction === 'LAPD') { try { fines = await api(`/customer/factions/LAPD/invoices/history?phone=${encodeURIComponent(d.person.phone_number)}`); } catch { fines = null; } }
+    body.innerHTML = `<div class="panel"><div class="title">${who(d.person.first_name, d.person.last_name)}</div>
+        <div class="meta">tel. ${escapeHtml(d.person.phone_number)} · SSN ${escapeHtml(d.person.ssn_rp)}</div></div>
+      <div class="panel"><div class="meta" style="margin-bottom:6px">Pojazdy</div>${d.vehicles.map(v => `<div class="tx-row"><div class="title">${escapeHtml(v.plate)} <span class="meta">${escapeHtml(v.model || '')}</span></div><span class="pill ${v.status === 'OK' ? 'ok' : 'warn'}">${escapeHtml(v.status)}</span></div>`).join('') || '<div id="empty">Brak.</div>'}</div>
+      ${curFaction === 'LAPD' ? `<div class="panel"><div class="meta" style="margin-bottom:6px">Poszukiwania i alerty</div>${d.warrants.map(w => `<div class="tx-row"><div><div class="title">${escapeHtml(w.kind)} <span class="pill ${w.status === 'AKTYWNY' ? 'warn' : 'off'}">${escapeHtml(w.status)}</span></div><div class="meta">${escapeHtml(w.reason)} · ${escapeHtml(w.created_faction)} · ${fdt(w.created_at)}</div></div></div>`).join('') || '<div id="empty">Brak.</div>'}</div>` : ''}
+      ${fines ? `<div class="panel"><div class="meta" style="margin-bottom:6px">Mandaty (historia)</div>${fines.items.map(i => `<div class="tx-row"><div><div class="title">#${i.invoice_id} ${escapeHtml(i.title)}</div><div class="meta">${fdt(i.created_at)} · ${who(i.i_first, i.i_last)}</div></div><div style="text-align:right"><div class="title">${fmt(i.amount)}</div><span class="pill ${i.status === 'OPLACONA' ? 'ok' : i.status === 'OCZEKUJE' ? 'warn' : 'off'}">${i.status === 'OPLACONA' ? 'opłacony' : i.status === 'OCZEKUJE' ? 'do zapłaty' : 'anulowany'}</span></div></div>`).join('') || '<div id="empty">Brak mandatów.</div>'}</div>` : ''}
+      <div class="panel"><div class="meta" style="margin-bottom:6px">Raporty</div>${d.reports.map(r => `<div class="tx-row" style="cursor:pointer" onclick="leoReport(${r.id})"><div><div class="title">#${r.id} ${escapeHtml(r.title)}</div><div class="meta">${fdt(r.created_at)}</div></div></div>`).join('') || '<div id="empty">Brak.</div>'}</div>
+      <button class="btn secondary" onclick="leoPersons()">Wróć do wyszukiwarki</button>`;
+  } catch (err) { body.innerHTML = errBox(err); }
+}
+
+async function leoVehicles() {
+  fbody().innerHTML = `<div class="panel"><div class="field"><label>Szukaj pojazdu (tablica albo model)</label><input id="lv-q" type="text" placeholder="min. 2 znaki" autocomplete="off"></div></div><div id="lv-res"></div>
+    <div class="panel"><div class="meta" style="margin-bottom:6px">Dodaj pojazd do rejestru</div>
+      <div class="field"><label>Tablica</label><input id="lv-plate" type="text" maxlength="16"></div>
+      <div class="field"><label>Model</label><input id="lv-model" type="text" maxlength="60"></div>
+      <div class="field"><label>Kolor</label><input id="lv-color" type="text" maxlength="30"></div>
+      <div class="field"><label>Właściciel – numer telefonu (opcjonalnie)</label><input id="lv-owner" type="text" placeholder="555-0000"></div>
+      <button class="btn" onclick="leoAddVehicle()">Dodaj</button><div id="lv-msg" class="msg"></div></div>`;
+  let t = null;
+  document.getElementById('lv-q').addEventListener('input', (e) => {
+    clearTimeout(t); const q = e.target.value.trim();
+    t = setTimeout(async () => {
+      const box = document.getElementById('lv-res'); if (!box) return;
+      if (q.length < 2) { box.innerHTML = ''; return; }
+      try {
+        const r = await lapi('/mdt/vehicles?q=' + encodeURIComponent(q));
+        box.innerHTML = '<div class="panel">' + (r.map(v => `<div class="tx-row"><div><div class="title">${escapeHtml(v.plate)} <span class="meta">${escapeHtml((v.model || '') + ' ' + (v.color || ''))}</span></div>
+          <div class="meta">właściciel: ${escapeHtml(v.owner || '—')}${v.warrants ? ' · alert' : ''}</div></div>
+          <select onchange="leoVehStatus(${v.vehicle_id}, this.value)" style="width:auto">${['OK', 'SKRADZIONY', 'POSZUKIWANY', 'ZHOLOWANY', 'KONFISKOWANY'].map(x => `<option ${x === v.status ? 'selected' : ''}>${x}</option>`).join('')}</select></div>`).join('') || '<div id="empty">Brak wyników.</div>') + '</div>';
+      } catch (err) { box.innerHTML = errBox(err); }
+    }, 300);
+  });
+}
+async function leoVehStatus(id, status) { try { await lapi(`/mdt/vehicles/${id}/status`, 'POST', { status }); } catch (err) { alert(err.message); } }
+async function leoAddVehicle() {
+  try {
+    await lapi('/mdt/vehicles', 'POST', { plate: document.getElementById('lv-plate').value, model: document.getElementById('lv-model').value, color: document.getElementById('lv-color').value, owner_phone: document.getElementById('lv-owner').value.trim() || undefined });
+    ['lv-plate', 'lv-model', 'lv-color', 'lv-owner'].forEach(i => document.getElementById(i).value = '');
+    lmsg('lv-msg', 'Pojazd dodany.', true);
+  } catch (err) { lmsg('lv-msg', err.message, false); }
+}
+
+async function leoWarrants() {
+  const body = fbody(); body.innerHTML = loadingBox();
+  try {
+    const list = await lapi('/mdt/warrants?all=1');
+    body.innerHTML = `<div class="panel"><div class="meta" style="margin-bottom:6px">Nowy wpis</div>
+        <div class="field"><label>Rodzaj</label><select id="lw-kind"><option>POSZUKIWANY</option><option>NAKAZ</option><option>ALERT</option></select></div>
+        <div class="field"><label>Osoba (imię i nazwisko)</label><input id="lw-name" type="text" maxlength="80"></div>
+        <div class="field"><label>Tablica (opcjonalnie)</label><input id="lw-plate" type="text" maxlength="16"></div>
+        <div class="field"><label>Powód</label><input id="lw-reason" type="text" maxlength="500"></div>
+        <button class="btn" onclick="leoAddWarrant()">Wystaw</button><div id="lw-msg" class="msg"></div></div>
+      <div class="panel">${list.map(w => `<div class="tx-row"><div><div class="title">${escapeHtml(w.kind)} — ${escapeHtml(w.subject || '')}${w.plate ? ' [' + escapeHtml(w.plate) + ']' : ''} <span class="pill ${w.status === 'AKTYWNY' ? 'warn' : 'off'}">${escapeHtml(w.status)}</span></div>
+          <div class="meta">${escapeHtml(w.reason)} · ${escapeHtml(w.created_faction)} · ${fdt(w.created_at)}</div></div>
+          ${w.status === 'AKTYWNY' ? `<button class="btn small secondary" style="width:auto" onclick="leoCloseWarrant(${w.id})">Zamknij</button>` : ''}</div>`).join('') || '<div id="empty">Brak wpisów.</div>'}</div>`;
+  } catch (err) { body.innerHTML = errBox(err); }
+}
+async function leoAddWarrant() {
+  try {
+    await lapi('/mdt/warrants', 'POST', { kind: document.getElementById('lw-kind').value, subject_name: document.getElementById('lw-name').value, plate: document.getElementById('lw-plate').value, reason: document.getElementById('lw-reason').value });
+    leoWarrants();
+  } catch (err) { lmsg('lw-msg', err.message, false); }
+}
+async function leoCloseWarrant(id) { try { await lapi(`/mdt/warrants/${id}/close`, 'POST', {}); } catch (err) { alert(err.message); } leoWarrants(); }
+
+async function leoReports() {
+  const body = fbody(); body.innerHTML = loadingBox();
+  try {
+    const list = await lapi('/mdt/reports');
+    body.innerHTML = `<div class="ftabs"><button onclick="leoReportForm()" style="margin-left:auto">＋ Nowy raport</button></div>
+      <div class="panel">${list.map(r => `<div class="tx-row" style="cursor:pointer" onclick="leoReport(${r.id})"><div>
+          <div class="title">#${r.id} ${escapeHtml(r.title)}${r.classification === 'POUFNA' ? ' 🔒' : ''}<span class="pill">${escapeHtml(RPT_STATUS[r.status] || r.status)}</span></div>
+          <div class="meta">${escapeHtml(r.kind)} · ${who(...String(r.author || '').split(' '))} · ${fdt(r.created_at)}</div></div></div>`).join('') || '<div id="empty">Brak raportów.</div>'}</div>`;
+  } catch (err) { body.innerHTML = errBox(err); }
+}
+async function leoReport(id) {
+  const body = fbody(); body.innerHTML = loadingBox();
+  try {
+    const d = await lapi('/mdt/reports/' + id); const r = d.report;
+    body.innerHTML = `<div class="panel"><div class="title">#${r.id} ${escapeHtml(r.title)}</div>
+        <div class="meta">${escapeHtml(r.kind)} · ${escapeHtml(r.author || '')} · ${escapeHtml(RPT_STATUS[r.status] || r.status)} · ${r.classification === 'POUFNA' ? 'poufny' : 'jawny'} · ${fdt(r.created_at)}</div>
+        <div style="white-space:pre-wrap;margin-top:10px">${escapeHtml(r.body)}</div>
+        ${d.edits.length ? `<div class="meta" style="margin-top:8px">Edycje: ${d.edits.map(e => escapeHtml(e.who || '') + ' ' + fdt(e.at)).join('; ')}</div>` : ''}</div>
+      ${d.can_edit ? `<button class="btn" onclick="leoReportForm(${r.id})">Edytuj</button>` : ''}
+      <button class="btn secondary" style="margin-top:8px" onclick="leoReports()">Wróć</button>`;
+  } catch (err) { body.innerHTML = errBox(err); }
+}
+async function leoReportForm(id) {
+  const body = fbody(); let r = null;
+  if (id) { try { r = (await lapi('/mdt/reports/' + id)).report; } catch (err) { body.innerHTML = errBox(err); return; } }
+  body.innerHTML = `<div class="panel">
+      <div class="field"><label>Tytuł</label><input id="lr-title" type="text" maxlength="120"></div>
+      ${r ? '' : `<div class="field"><label>Rodzaj</label><select id="lr-kind"><option>RAPORT</option><option>NOTATKA</option><option>ARESZTOWANIE</option><option>INCYDENT</option></select></div>`}
+      <div class="field"><label>Treść</label><textarea id="lr-body" rows="8" style="width:100%"></textarea></div>
+      <div class="field"><label>Klasyfikacja</label><select id="lr-cls"><option value="JAWNA">jawny (widoczny dla frakcji)</option><option value="POUFNA">poufny (autor i kierownictwo)</option></select></div>
+      <button class="btn" onclick="leoSaveReport(${id || 0})">Zapisz</button>
+      <button class="btn secondary" style="margin-top:8px" onclick="${id ? `leoReport(${id})` : 'leoReports()'}">Anuluj</button><div id="lr-msg" class="msg"></div></div>`;
+  if (r) { document.getElementById('lr-title').value = r.title; document.getElementById('lr-body').value = r.body; document.getElementById('lr-cls').value = r.classification; }
+}
+async function leoSaveReport(id) {
+  const title = document.getElementById('lr-title').value, bodyTxt = document.getElementById('lr-body').value, cls = document.getElementById('lr-cls').value;
+  try {
+    if (id) { await lapi(`/mdt/reports/${id}/edit`, 'POST', { title, body: bodyTxt, classification: cls }); leoReport(id); }
+    else { const n = await lapi('/mdt/reports', 'POST', { title, body: bodyTxt, kind: document.getElementById('lr-kind').value, classification: cls }); leoReport(n.id); }
+  } catch (err) { lmsg('lr-msg', err.message, false); }
 }
 
 // --- dziennik ---

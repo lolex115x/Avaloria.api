@@ -10,6 +10,7 @@ async function migrate(pool) {
   await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS faction_accounts_number_idx ON faction_accounts (account_number)');
   await pool.query('ALTER TABLE faction_transactions ADD COLUMN IF NOT EXISTS counterparty TEXT');
   await pool.query('ALTER TABLE invoices ADD COLUMN IF NOT EXISTS vat BIGINT NOT NULL DEFAULT 0');
+  await pool.query("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'FAKTURA'"); // FAKTURA | MANDAT
   for (const [f, no] of Object.entries(HOLDERS)) {
     await pool.query(
       `INSERT INTO faction_accounts (faction, balance, account_number) VALUES ($1, 0, $2)
